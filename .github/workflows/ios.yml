@@ -15,6 +15,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: List Xcode schemes
+        run: xcodebuild -list -project "War Card Game.xcodeproj"
+      
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -27,8 +30,11 @@ jobs:
             | head -1 \
             | sed 's/ Simulator$//')
 
-          xcodebuild \
-            -project 'War Card Game/War Card Game.xcodeproj' \
+            xcodebuild \
+                    -project "War Card Game/War Card Game.xcodeproj" \
+                    -scheme "War Card Game" \
+                    -destination "platform=iOS Simulator,name=$DEVICE" \
+            clean build
             -scheme ios-war-card-game \
             -destination "platform=iOS Simulator,name=$DEVICE" \
             clean build
