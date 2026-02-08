@@ -1,36 +1,49 @@
-build:
-  name: Build iOS Project
-  runs-on: macos-latest
-  env:
-    DEVICE_NAME: "iPhone 16"
-    DEVICE_OS: "26.2"
-    PROJECT_PATH: "War Card Game/War Card Game.xcodeproj"
-    SCHEME_NAME: "War Card Game"
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+name: iOS Build
 
-    - name: Set up Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: 'latest-stable'
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
-    - name: Build project
-      run: |
-        set -o pipefail
-        XCRESULT_PATH=$(mktemp -d)/Build.xcresult
-        xcodebuild \
-          -project "$PROJECT_PATH" \
-          -scheme "$SCHEME_NAME" \
-          -destination "platform=iOS Simulator,name=$DEVICE_NAME,OS=$DEVICE_OS" \
-          clean build \
-          -resultBundlePath "$XCRESULT_PATH" \
-        || echo "BUILD_FAILED=true" >> $GITHUB_ENV
-        echo "XCRESULT_PATH=$XCRESULT_PATH" >> $GITHUB_ENV
+env:
+  # ------------------------
+  # Pinned simulator for deterministic CI
+  # ------------------------
+  DEVICE_NAME: "iPhone 16"
+  DEVICE_OS: "26.2"
+  PROJECT_PATH: "War Card Game/War Card Game.xcodeproj"
+  SCHEME_NAME: "War Card Game"
 
-    - name: Upload build result on failure
-      if: env.BUILD_FAILED == 'true'
-      uses: actions/upload-artifact@v3
-      with:
-        name: Build-xcresult
-        path: ${{ env.XCRESULT_PATH }}
+jobs:
+  build:
+    name: Build iOS Project
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 'latest-stable'
+
+      - name: Build project
+        run: |
+          set -o pipefail
+          XCRESULT_PATH=$(mktemp -d)/Build.xcresult
+          xcodebuild \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME_NAME" \
+            -destination "platform=iOS Simulator,name=$DEVICE_NAME,OS=$DEVICE_OS" \
+            clean build \
+            -resultBundlePath "$XCRESULT_PATH" \
+          || echo "BUILD_FAILED=true" >> $GITHUB_ENV
+          echo "XCRESULT_PATH=$XCRESULT_PATH" >> $GITHUB_ENV
+
+      - name: Upload build result on failure
+        if: env.BUILD_FAILED == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Build-xcresult
+          path: ${{ env.XCRESULT_PATH }}
