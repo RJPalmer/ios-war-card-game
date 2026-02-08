@@ -28,7 +28,7 @@ jobs:
             | sed 's/ Simulator$//')
 
           xcodebuild \
-            -project ios-war-card-game.xcodeproj \
+            -project 'War Card Game/War Card Game.xcodeproj' \
             -scheme ios-war-card-game \
             -destination "platform=iOS Simulator,name=$DEVICE" \
             clean build
