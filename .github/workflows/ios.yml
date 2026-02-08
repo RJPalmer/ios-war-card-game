@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: List Xcode schemes
-        run: xcodebuild -list -project "War Card Game.xcodeproj"
+        run: xcodebuild -list -project "War Card Game/War Card Game.xcodeproj"
       
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
