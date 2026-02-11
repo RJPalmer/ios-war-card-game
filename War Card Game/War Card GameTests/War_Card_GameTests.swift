@@ -63,4 +63,42 @@ struct War_Card_GameTests {
         #expect(card1 != card3)
         #expect(card4 == card3)
     }
+    // MARK: - Deck Tests
+
+    @Test func deck_has52UniqueCards() {
+        let deck = Deck()
+        #expect(deck.cards.count == 52)
+
+        let uniqueCards = Set(deck.cards.map { "\($0.rank.rawValue)-\($0.suit)" })
+        #expect(uniqueCards.count == 52)
+    }
+
+    @Test func deck_shuffleChangesOrder() {
+        var deck1 = Deck()
+        var deck2 = Deck()
+
+        // Rebuild both decks in identical order (no shuffle)
+        deck1 = Deck()
+        deck2 = Deck()
+
+        // Force deterministic comparison by rebuilding without shuffle
+        var orderedDeck = Deck()
+        orderedDeck = Deck()
+
+        // Create two decks and shuffle one manually for comparison
+        var comparisonDeck = Deck()
+        let originalOrder = comparisonDeck.cards
+        comparisonDeck.shuffle()
+
+        #expect(comparisonDeck.cards != originalOrder)
+    }
+
+    @Test func deck_dealSplitsEvenly() {
+        var deck = Deck()
+        let (playerOne, playerTwo) = deck.dealEvenly()
+
+        #expect(playerOne.count == 26)
+        #expect(playerTwo.count == 26)
+        #expect(deck.cards.isEmpty)
+    }
 }
