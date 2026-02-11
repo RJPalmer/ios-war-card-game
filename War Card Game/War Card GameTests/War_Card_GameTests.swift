@@ -57,8 +57,10 @@ struct War_Card_GameTests {
         let card1 = Card(suit: .hearts, rank: .ten)
         let card2 = Card(suit: .spades, rank: .jack)
         let card3 = Card(suit: .clubs, rank: .ten)
+        let card4 = Card(suit: .clubs, rank: .ten)
 
         #expect(card2 > card1)
-        #expect(card1 == card3)
+        #expect(card1 != card3)
+        #expect(card4 == card3)
     }
 }
