@@ -9,7 +9,7 @@ import Testing
 import Foundation
 @testable import War_Card_Game
 
-struct PlayerTests {
+struct War_Card_Game_PlayerTests {
 
     @Test
     func playerStartsWithCorrectCardCount() async throws {
