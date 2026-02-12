@@ -6,3 +6,31 @@
 //
 
 import Foundation
+
+struct Player {
+    
+    private var cards: [Card]
+    
+    init(cards: [Card] = []) {
+        self.cards = cards
+    }
+    
+    // MARK: - Public API
+    
+    var cardCount: Int {
+        return cards.count
+    }
+    
+    var isEmpty: Bool {
+        return cards.isEmpty
+    }
+    
+    mutating func drawCard() -> Card? {
+        guard !cards.isEmpty else { return nil }
+        return cards.removeFirst()
+    }
+    
+    mutating func receiveCards(_ newCards: [Card]) {
+        cards.append(contentsOf: newCards)
+    }
+}
