@@ -26,6 +26,7 @@ class GameEngine {
     func shuffleDeck() {
         // Shuffle the deck of cards before dealing
         // Example: deck.shuffle()
+        deck.shuffle()
     }
     
     func dealCards() {
