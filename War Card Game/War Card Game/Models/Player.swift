@@ -9,7 +9,7 @@ import Foundation
 
 struct Player {
     
-    private var cards: [Card]
+    private(set) var cards: [Card]
     
     init(cards: [Card] = []) {
         self.cards = cards
@@ -30,6 +30,9 @@ struct Player {
         return cards.removeFirst()
     }
     
+    mutating func receiveCard(_ newCard: Card){
+        cards.append(newCard)
+    }
     mutating func receiveCards(_ newCards: [Card]) {
         cards.append(contentsOf: newCards)
     }

@@ -73,7 +73,7 @@ struct PlayerTests {
             Card(suit: .spades, rank: .ace)
         ])
 
-        player.receiveCard(Card(suit: .hearts, rank: .king))
+        player.receiveCards([Card(suit: .hearts, rank: .king)])
 
         #expect(player.cardCount == 2)
         #expect(player.drawCard()?.rank == .ace)
