@@ -56,10 +56,27 @@ class GameEngine {
     }
     
     func playTurn() {
-        // Each player plays a card
-        // Compare the cards and determine the winner of the turn
-        // Winner takes the cards in the battle pile
-        // If tie, call handleWar()
+        // Ensure both players have at least one card
+        guard let card1 = player1.drawCard(),
+              let card2 = player2.drawCard() else {
+            return
+        }
+
+        // Add played cards to the battle pile
+        battlePile.append(card1)
+        battlePile.append(card2)
+
+        // Compare ranks
+        if card1.rank.rawValue > card2.rank.rawValue {
+            player1.receiveCards(battlePile)
+            battlePile.removeAll()
+        } else if card2.rank.rawValue > card1.rank.rawValue {
+            player2.receiveCards(battlePile)
+            battlePile.removeAll()
+        } else {
+            // Tie scenario — initiate war
+            handleWar()
+        }
     }
     
     func handleWar() {
