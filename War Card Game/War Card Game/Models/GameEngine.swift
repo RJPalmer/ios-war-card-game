@@ -66,11 +66,11 @@ class GameEngine {
         battlePile.append(card1)
         battlePile.append(card2)
 
-        // Compare ranks
-        if card1.rank.rawValue > card2.rank.rawValue {
+        // Compare ranks directly (since Rank is Comparable)
+        if card1.rank > card2.rank {
             player1.receiveCards(battlePile)
             battlePile.removeAll()
-        } else if card2.rank.rawValue > card1.rank.rawValue {
+        } else if card2.rank > card1.rank {
             player2.receiveCards(battlePile)
             battlePile.removeAll()
         } else {
