@@ -9,10 +9,13 @@ import Foundation
 
 struct Player {
     
+    private(set) var name:String
     private(set) var cards: [Card]
     
-    init(cards: [Card] = []) {
+    init(name:String = "", cards: [Card] = []) {
+        self.name = name
         self.cards = cards
+        
     }
     
     // MARK: - Public API
@@ -35,5 +38,8 @@ struct Player {
     }
     mutating func receiveCards(_ newCards: [Card]) {
         cards.append(contentsOf: newCards)
+    }
+    mutating func setCards(_ newCards: [Card]) {
+        self.cards = newCards
     }
 }

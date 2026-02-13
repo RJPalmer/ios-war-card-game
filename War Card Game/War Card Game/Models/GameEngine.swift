@@ -29,9 +29,30 @@ class GameEngine {
         deck.shuffle()
     }
     
+    /// Deals cards evenly to both players from the current deck.
+    /// 
+    /// This method assumes the deck has already been shuffled (see `shuffleDeck()`).
+    /// It alternates dealing one card at a time to `player1` and `player2` until the
+    /// deck is exhausted or no more cards can be dealt.
+    /// 
+    /// - Important: Calling this more than once without resetting the deck and players
+    ///   may result in duplicated or inconsistent state. Ensure you start from a fresh
+    ///   `Deck` and empty player hands when starting a new game.
+    /// 
+    /// - Precondition: `deck` contains a standard set of cards ready to be dealt.
+    /// - Postcondition: The deck is emptied (or reduced) and both players have been
+    ///   assigned cards as evenly as possible (the difference in counts is at most 1).
+    /// 
+    /// - Note: If the deck has an odd number of cards, `player1` will receive one more card.
+    /// - SeeAlso: `shuffleDeck()`, `startGame()`
     func dealCards() {
-        // Shuffle the deck and deal cards evenly to both players
-        // Example: alternate dealing cards until deck is empty
+        let (handOne, handTwo) = deck.dealEvenly()
+
+        precondition(handOne.count + handTwo.count == 52,
+                     "Invalid deck size during dealing")
+
+        player1.setCards(handOne)
+        player2.setCards(handTwo)
     }
     
     func playTurn() {
