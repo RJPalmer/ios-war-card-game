@@ -5,7 +5,15 @@
 //  Created by Robert Palmer on 2/10/26.
 //
 
+
 import Foundation
+
+enum TurnResult {
+    case player1Win(card1: Card, card2: Card)
+    case player2Win(card1: Card, card2: Card)
+    case war(card1: Card, card2: Card)
+    case gameOver(winner: Player)
+}
 
 class GameEngine {
     var player1: Player
@@ -55,27 +63,29 @@ class GameEngine {
         player2.setCards(handTwo)
     }
     
-    func playTurn() {
+    func playTurn() -> TurnResult? {
         // Ensure both players have at least one card
         guard let card1 = player1.drawCard(),
               let card2 = player2.drawCard() else {
-            return
+            let winner = player1.cardCount > 0 ? player1 : player2
+            return .gameOver(winner: winner)
         }
 
         // Add played cards to the battle pile
         battlePile.append(card1)
         battlePile.append(card2)
 
-        // Compare ranks directly (since Rank is Comparable)
+        // Compare ranks directly (Rank conforms to Comparable)
         if card1.rank > card2.rank {
             player1.receiveCards(battlePile)
             battlePile.removeAll()
+            return .player1Win(card1: card1, card2: card2)
         } else if card2.rank > card1.rank {
             player2.receiveCards(battlePile)
             battlePile.removeAll()
+            return .player2Win(card1: card1, card2: card2)
         } else {
-            // Tie scenario — initiate war
-            handleWar()
+            return .war(card1: card1, card2: card2)
         }
     }
     
