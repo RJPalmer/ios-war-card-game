@@ -16,6 +16,15 @@ enum TurnResult {
 }
 
 class GameEngine {
+    
+    enum GameState {
+            case idle
+            case active
+            case war
+            case finished(winner: Player)
+        }
+
+    private(set) var state: GameState = .idle
     var player1: Player
     var player2: Player
     var deck: Deck
@@ -90,11 +99,56 @@ class GameEngine {
     }
     
     func handleWar() {
-        // Handle the war scenario when players tie
-        // Each player places additional cards face down and one card face up
-        // Compare face-up cards to determine winner
-        // Winner takes all cards in the battle pile
-        // If tie continues, repeat war
+        state = .war
+
+        while true {
+            // Each player must have at least 4 cards to continue war (3 face down + 1 face up)
+            if player1.cardCount < 4 {
+                state = .finished(winner: player2)
+                return
+            }
+
+            if player2.cardCount < 4 {
+                state = .finished(winner: player1)
+                return
+            }
+
+            // Each player places 3 cards face down into battle pile
+            for _ in 0..<3 {
+                if let down1 = player1.drawCard() {
+                    battlePile.append(down1)
+                }
+                if let down2 = player2.drawCard() {
+                    battlePile.append(down2)
+                }
+            }
+
+            // Each player places 1 card face up
+            guard let warCard1 = player1.drawCard(),
+                  let warCard2 = player2.drawCard() else {
+                let winner = player1.cardCount > 0 ? player1 : player2
+                state = .finished(winner: winner)
+                return
+            }
+
+            battlePile.append(warCard1)
+            battlePile.append(warCard2)
+
+            // Compare war cards
+            if warCard1.rank > warCard2.rank {
+                player1.receiveCards(battlePile)
+                battlePile.removeAll()
+                state = .active
+                return
+            } else if warCard2.rank > warCard1.rank {
+                player2.receiveCards(battlePile)
+                battlePile.removeAll()
+                state = .active
+                return
+            }
+
+            // If tie again, loop continues for recursive war resolution
+        }
     }
     
     func checkGameOver() -> Bool {
