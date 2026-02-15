@@ -12,7 +12,6 @@ enum TurnResult {
     case player1Win(card1: Card, card2: Card)
     case player2Win(card1: Card, card2: Card)
     case war(card1: Card, card2: Card)
-    case gameOver(winner: Player)
 }
 
 class GameEngine {
@@ -77,7 +76,8 @@ class GameEngine {
         guard let card1 = player1.drawCard(),
               let card2 = player2.drawCard() else {
             let winner = player1.cardCount > 0 ? player1 : player2
-            return .gameOver(winner: winner)
+            state = .finished(winner: winner)
+            return nil
         }
 
         // Add played cards to the battle pile
