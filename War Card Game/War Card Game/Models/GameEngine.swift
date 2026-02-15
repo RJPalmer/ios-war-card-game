@@ -154,7 +154,7 @@ class GameEngine {
         }
     }
     
-    func checkGameOver() -> Bool {
+    private func checkGameOver() -> Bool {
         // If either player has no cards remaining, the game is finished
         if player1.cardCount == 0 {
             state = .finished(winner: player2)
