@@ -155,8 +155,17 @@ class GameEngine {
     }
     
     func checkGameOver() -> Bool {
-        // Check if either player has no cards left
-        // Return true if game is over, else false
+        // If either player has no cards remaining, the game is finished
+        if player1.cardCount == 0 {
+            state = .finished(winner: player2)
+            return true
+        }
+
+        if player2.cardCount == 0 {
+            state = .finished(winner: player1)
+            return true
+        }
+
         return false
     }
     
