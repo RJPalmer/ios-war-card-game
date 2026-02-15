@@ -10,36 +10,36 @@ import Foundation
 struct Player {
     
     private(set) var name:String
-    private(set) var cards: [Card]
+    private var deck: ArraySlice<Card>
     
-    init(name:String = "", cards: [Card] = []) {
+    init(name: String = "", cards: [Card] = []) {
         self.name = name
-        self.cards = cards
-        
+        self.deck = ArraySlice(cards)
     }
     
     // MARK: - Public API
     
     var cardCount: Int {
-        return cards.count
+        return deck.count
     }
     
     var isEmpty: Bool {
-        return cards.isEmpty
+        return deck.isEmpty
     }
     
     mutating func drawCard() -> Card? {
-        guard !cards.isEmpty else { return nil }
-        return cards.removeFirst()
+        guard let first = deck.first else { return nil }
+        deck = deck.dropFirst()
+        return first
     }
     
-    mutating func receiveCard(_ newCard: Card){
-        cards.append(newCard)
+    mutating func receiveCard(_ newCard: Card) {
+        deck.append(newCard)
     }
     mutating func receiveCards(_ newCards: [Card]) {
-        cards.append(contentsOf: newCards)
+        deck.append(contentsOf: newCards)
     }
     mutating func setCards(_ newCards: [Card]) {
-        self.cards = newCards
+        self.deck = ArraySlice(newCards)
     }
 }
