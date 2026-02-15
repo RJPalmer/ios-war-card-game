@@ -11,7 +11,7 @@ import Foundation
 enum TurnResult {
     case player1Win(card1: Card, card2: Card)
     case player2Win(card1: Card, card2: Card)
-    case war(card1: Card, card2: Card)
+    case war(initialCard1: Card, initialCard2: Card, winner: Player?)
 }
 
 class GameEngine {
@@ -46,19 +46,19 @@ class GameEngine {
     }
     
     /// Deals cards evenly to both players from the current deck.
-    /// 
+    ///
     /// This method assumes the deck has already been shuffled (see `shuffleDeck()`).
     /// It alternates dealing one card at a time to `player1` and `player2` until the
     /// deck is exhausted or no more cards can be dealt.
-    /// 
+    ///
     /// - Important: Calling this more than once without resetting the deck and players
     ///   may result in duplicated or inconsistent state. Ensure you start from a fresh
     ///   `Deck` and empty player hands when starting a new game.
-    /// 
+    ///
     /// - Precondition: `deck` contains a standard set of cards ready to be dealt.
     /// - Postcondition: The deck is emptied (or reduced) and both players have been
     ///   assigned cards as evenly as possible (the difference in counts is at most 1).
-    /// 
+    ///
     /// - Note: If the deck has an odd number of cards, `player1` will receive one more card.
     /// - SeeAlso: `shuffleDeck()`, `startGame()`
     func dealCards() {
@@ -94,23 +94,26 @@ class GameEngine {
             battlePile.removeAll()
             return .player2Win(card1: card1, card2: card2)
         } else {
-            return .war(card1: card1, card2: card2)
+            // Tie detected — automatically resolve war internally
+            state = .war
+            let warWinner = handleWar()
+            return .war(initialCard1: card1, initialCard2: card2, winner: warWinner)
         }
     }
     
-    func handleWar() {
+    func handleWar() -> Player? {
         state = .war
 
         while true {
             // Each player must have at least 4 cards to continue war (3 face down + 1 face up)
             if player1.cardCount < 4 {
                 state = .finished(winner: player2)
-                return
+                return player2
             }
 
             if player2.cardCount < 4 {
                 state = .finished(winner: player1)
-                return
+                return player1
             }
 
             // Each player places 3 cards face down into battle pile
@@ -128,7 +131,7 @@ class GameEngine {
                   let warCard2 = player2.drawCard() else {
                 let winner = player1.cardCount > 0 ? player1 : player2
                 state = .finished(winner: winner)
-                return
+                return winner
             }
 
             battlePile.append(warCard1)
@@ -139,12 +142,12 @@ class GameEngine {
                 player1.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .active
-                return
+                return player1
             } else if warCard2.rank > warCard1.rank {
                 player2.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .active
-                return
+                return player2
             }
 
             // If tie again, loop continues for recursive war resolution
