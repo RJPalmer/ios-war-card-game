@@ -41,9 +41,9 @@ struct War_Card_Game_EngineTests {
         let highCard = Card(suit: .hearts, rank: .ace)
         let lowCard = Card(suit: .clubs, rank: .two)
 
+        await engine.startGame()
         await engine.player1.setCards([highCard])
         await engine.player2.setCards([lowCard])
-        await engine.startGame()
 
         let result = await engine.playTurn()
 
@@ -83,9 +83,9 @@ struct War_Card_Game_EngineTests {
             Card(suit: .clubs, rank: .queen)
         ]
 
+        await engine.startGame()
         await engine.player1.setCards(warCards1)
         await engine.player2.setCards(warCards2)
-        await engine.startGame()
 
         let result = await engine.playTurn()
 
@@ -106,9 +106,9 @@ struct War_Card_Game_EngineTests {
 
         let highCard = Card(suit: .hearts, rank: .ace)
 
+        await engine.startGame()
         await engine.player1.setCards([highCard])
         await engine.player2.setCards([])
-        await engine.startGame()
 
         _ = await engine.playTurn()
 
