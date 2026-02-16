@@ -5,6 +5,7 @@
 //  Created by Robert Palmer on 2/10/26.
 //
 
+
 import Foundation
 <<<<<<< Updated upstream
 =======
@@ -105,9 +106,11 @@ class GameEngine {
             return nil
         }
 
+        // Add played cards to the battle pile
         battlePile.append(card1)
         battlePile.append(card2)
 
+        // Compare ranks directly (Rank conforms to Comparable)
         if card1.rank > card2.rank {
             player1.receiveCards(battlePile)
             battlePile.removeAll()
@@ -117,6 +120,7 @@ class GameEngine {
             battlePile.removeAll()
             return .player2Win(card1: card1, card2: card2)
         } else {
+            // Tie detected — automatically resolve war internally
             state = .war
             let warWinner = handleWar()
 
@@ -183,6 +187,7 @@ class GameEngine {
             battlePile.append(warCard1)
             battlePile.append(warCard2)
 
+            // Compare war cards
             if warCard1.rank > warCard2.rank {
                 player1.receiveCards(battlePile)
                 battlePile.removeAll()

@@ -53,30 +53,33 @@ struct Deque<Element> {
 class Player {
 >>>>>>> Stashed changes
     
-    private(set) var cards: [Card]
+    private(set) var name: String
+    private var deck: Deque<Card>
     
-    init(cards: [Card] = []) {
-        self.cards = cards
+    init(name: String = "", cards: [Card] = []) {
+        self.name = name
+        var deque = Deque<Card>()
+        deque.enqueue(contentsOf: cards)
+        self.deck = deque
     }
     
     // MARK: - Public API
     
     var cardCount: Int {
-        return cards.count
+        deck.count
     }
     
     var isEmpty: Bool {
-        return cards.isEmpty
+        deck.isEmpty
     }
     
 <<<<<<< Updated upstream
     mutating func drawCard() -> Card? {
-        guard !cards.isEmpty else { return nil }
-        return cards.removeFirst()
+        deck.dequeue()
     }
     
-    mutating func receiveCard(_ newCard: Card){
-        cards.append(newCard)
+    mutating func receiveCard(_ newCard: Card) {
+        deck.enqueue(newCard)
     }
     mutating func receiveCards(_ newCards: [Card]) {
         cards.append(contentsOf: newCards)
