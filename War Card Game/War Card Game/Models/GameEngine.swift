@@ -16,12 +16,25 @@ enum TurnResult {
 
 class GameEngine {
     
-    enum GameState {
-            case idle
-            case active
-            case war
-            case finished(winner: Player)
+    enum GameState: Equatable {
+        case idle
+        case active
+        case war
+        case finished(winner: Player)
+
+        static func == (lhs: GameState, rhs: GameState) -> Bool {
+            switch (lhs, rhs) {
+            case (.idle, .idle),
+                 (.active, .active),
+                 (.war, .war):
+                return true
+            case (.finished(let lWinner), .finished(let rWinner)):
+                return lWinner.name == rWinner.name
+            default:
+                return false
+            }
         }
+    }
 
     private(set) var state: GameState = .idle
     var player1: Player
