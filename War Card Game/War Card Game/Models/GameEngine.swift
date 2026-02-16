@@ -85,11 +85,22 @@ class GameEngine {
     }
     
     func playTurn() -> TurnResult? {
-        // Ensure both players have at least one card
+        guard state == .active else {
+            return nil
+        }
+        
+        if player1.cardCount == 0 {
+            state = .finished(winner: player2)
+            return nil
+        }
+
+        if player2.cardCount == 0 {
+            state = .finished(winner: player1)
+            return nil
+        }
+
         guard let card1 = player1.drawCard(),
               let card2 = player2.drawCard() else {
-            let winner = player1.cardCount > 0 ? player1 : player2
-            state = .finished(winner: winner)
             return nil
         }
 
@@ -167,23 +178,9 @@ class GameEngine {
         }
     }
     
-    private func checkGameOver() -> Bool {
-        // If either player has no cards remaining, the game is finished
-        if player1.cardCount == 0 {
-            state = .finished(winner: player2)
-            return true
-        }
-
-        if player2.cardCount == 0 {
-            state = .finished(winner: player1)
-            return true
-        }
-
-        return false
-    }
-    
     func startGame() {
-        // Start the game by shuffling the deck and dealing cards to players
+        state = .active
+        battlePile.removeAll()
         shuffleDeck()
         dealCards()
     }
