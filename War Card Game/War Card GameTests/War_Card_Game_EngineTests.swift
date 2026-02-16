@@ -24,7 +24,7 @@ struct War_Card_Game_EngineTests {
     @Test
     func startGameDeals26CardsEach() async throws {
         let engine = GameEngine()
-        await engine.startGame()
+        engine.startGame()
 
         #expect(engine.player1.cardCount == 26)
         #expect(engine.player2.cardCount == 26)
@@ -41,11 +41,11 @@ struct War_Card_Game_EngineTests {
         let highCard = Card(suit: .hearts, rank: .ace)
         let lowCard = Card(suit: .clubs, rank: .two)
 
-        await engine.startGame()
-        await engine.player1.setCards([highCard])
-        await engine.player2.setCards([lowCard])
+        engine.startGame()
+        engine.player1.setCards([highCard])
+        engine.player2.setCards([lowCard])
 
-        let result = await engine.playTurn()
+        let result = engine.playTurn()
 
         if case .player1Win(let c1, let c2)? = result {
             #expect(c1.rank == .ace)
@@ -83,11 +83,11 @@ struct War_Card_Game_EngineTests {
             Card(suit: .clubs, rank: .queen)
         ]
 
-        await engine.startGame()
-        await engine.player1.setCards(warCards1)
-        await engine.player2.setCards(warCards2)
+         engine.startGame()
+         engine.player1.setCards(warCards1)
+        engine.player2.setCards(warCards2)
 
-        let result = await engine.playTurn()
+        let result =  engine.playTurn()
 
         if case .war(_, _, let winner)? = result {
             #expect(winner?.name == engine.player1.name)
@@ -106,11 +106,11 @@ struct War_Card_Game_EngineTests {
 
         let highCard = Card(suit: .hearts, rank: .ace)
 
-        await engine.startGame()
-        await engine.player1.setCards([highCard])
-        await engine.player2.setCards([])
+         engine.startGame()
+         engine.player1.setCards([highCard])
+         engine.player2.setCards([])
 
-        _ = await engine.playTurn()
+        _ =  engine.playTurn()
 
         if case .finished(let winner) = engine.state {
             #expect(winner.name == engine.player1.name)
@@ -124,7 +124,7 @@ struct War_Card_Game_EngineTests {
     @Test
     func totalCardsRemain52AfterStart() async throws {
         let engine = GameEngine()
-        await engine.startGame()
+         engine.startGame()
 
         let total = engine.player1.cardCount + engine.player2.cardCount
         #expect(total == 52)

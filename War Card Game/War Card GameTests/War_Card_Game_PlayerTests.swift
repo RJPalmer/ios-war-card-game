@@ -9,6 +9,7 @@ import Testing
 import Foundation
 @testable import War_Card_Game
 
+@MainActor
 struct War_Card_Game_PlayerTests {
 
     @Test
@@ -80,3 +81,4 @@ struct War_Card_Game_PlayerTests {
         #expect(player.drawCard()?.rank == .king)
     }
 }
+
