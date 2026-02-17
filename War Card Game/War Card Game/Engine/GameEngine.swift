@@ -7,8 +7,6 @@
 
 
 import Foundation
-<<<<<<< Updated upstream
-=======
 
 enum TurnResult {
     case player1Win(card1: Card, card2: Card)
@@ -218,4 +216,4 @@ class GameEngine {
         dealCards()
     }
 }
->>>>>>> Stashed changes
+

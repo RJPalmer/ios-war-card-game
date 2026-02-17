@@ -7,9 +7,7 @@
 
 import Foundation
 
-<<<<<<< Updated upstream
-struct Player {
-=======
+
 struct Deque<Element> {
     private var storage: [Element] = []
     private var head: Int = 0
@@ -51,7 +49,7 @@ struct Deque<Element> {
 }
 
 class Player {
->>>>>>> Stashed changes
+    
     
     private(set) var name: String
     private var deck: Deque<Card>
@@ -73,17 +71,7 @@ class Player {
         deck.isEmpty
     }
     
-<<<<<<< Updated upstream
-    mutating func drawCard() -> Card? {
-        deck.dequeue()
-    }
     
-    mutating func receiveCard(_ newCard: Card) {
-        deck.enqueue(newCard)
-    }
-    mutating func receiveCards(_ newCards: [Card]) {
-        cards.append(contentsOf: newCards)
-=======
     func drawCard() -> Card? {
         deck.dequeue()
     }
@@ -98,6 +86,6 @@ class Player {
         var deque = Deque<Card>()
         deque.enqueue(contentsOf: newCards)
         self.deck = deque
->>>>>>> Stashed changes
+        
     }
 }
