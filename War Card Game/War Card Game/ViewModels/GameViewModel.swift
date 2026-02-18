@@ -22,8 +22,6 @@ final class GameViewModel {
 
     init() {
         // Prepare and start the game according to GameEngine API
-        engine.shuffleDeck()
-        engine.dealCards()
         engine.startGame()
         syncState()
     }
