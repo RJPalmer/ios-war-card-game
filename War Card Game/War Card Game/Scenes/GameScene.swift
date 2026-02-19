@@ -97,7 +97,7 @@ final class GameScene: SKScene {
 
         // Layout using proportional positioning (anchorPoint = 0.5,0.5)
 
-        let verticalSpacing = size.height * 0.08
+        let verticalSpacing = size.height * 0.15
 
         // CPU Area (Top Third)
         cpuCardNode.position = CGPoint(x: 0, y: size.height * 0.30)
@@ -108,10 +108,10 @@ final class GameScene: SKScene {
 
         // Player Area (Bottom Third)
         playerCardNode.position = CGPoint(x: 0, y: -size.height * 0.25)
-        playerCountLabel.position = CGPoint(x: 0, y: playerCardNode.position.y - verticalSpacing)
+        playerCountLabel.position = CGPoint(x: 0, y: playerCardNode.position.y + verticalSpacing)
 
         // Play Button (Near Bottom)
-        playButton.position = CGPoint(x: 0, y: -size.height * 0.40)
+        playButton.position = CGPoint(x: 0, y: -size.height * 0.45)
     }
 
     // MARK: - UI Updates
