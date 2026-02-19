@@ -28,7 +28,7 @@ final class GameScene: SKScene {
     // MARK: - Lifecycle
 
     override func didMove(to view: SKView) {
-        backgroundColor = .black
+        backgroundColor = SKColor(red: 0.05, green: 0.25, blue: 0.15, alpha: 1)
         scaleMode = .resizeFill
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
@@ -50,7 +50,7 @@ final class GameScene: SKScene {
     private func createNodes() {
 
         // CPU Card
-        cpuCardNode.setScale(0.5)
+        cpuCardNode.setScale(0.65)
         addChild(cpuCardNode)
 
         cpuCountLabel.fontSize = 16
@@ -60,7 +60,7 @@ final class GameScene: SKScene {
         addChild(cpuCountLabel)
 
         // Player Card
-        playerCardNode.setScale(0.5)
+        playerCardNode.setScale(0.65)
         addChild(playerCardNode)
 
         playerCountLabel.fontSize = 16
@@ -95,18 +95,23 @@ final class GameScene: SKScene {
 
     private func layoutNodes() {
 
-        // With anchorPoint = (0.5, 0.5), (0,0) is the center of the screen
-        // Layout becomes resolution-independent
+        // Layout using proportional positioning (anchorPoint = 0.5,0.5)
 
-        cpuCardNode.position = CGPoint(x: 0, y: 200)
-        cpuCountLabel.position = CGPoint(x: 0, y: 140)
+        let verticalSpacing = size.height * 0.08
 
-        playerCardNode.position = CGPoint(x: 0, y: -50)
-        playerCountLabel.position = CGPoint(x: 0, y: -120)
+        // CPU Area (Top Third)
+        cpuCardNode.position = CGPoint(x: 0, y: size.height * 0.30)
+        cpuCountLabel.position = CGPoint(x: 0, y: cpuCardNode.position.y - verticalSpacing)
 
-        resultLabel.position = CGPoint(x: 0, y: 70)
+        // Battle Result Area (Center)
+        resultLabel.position = CGPoint(x: 0, y: 0)
 
-        playButton.position = CGPoint(x: 0, y: -250)
+        // Player Area (Bottom Third)
+        playerCardNode.position = CGPoint(x: 0, y: -size.height * 0.25)
+        playerCountLabel.position = CGPoint(x: 0, y: playerCardNode.position.y - verticalSpacing)
+
+        // Play Button (Near Bottom)
+        playButton.position = CGPoint(x: 0, y: -size.height * 0.40)
     }
 
     // MARK: - UI Updates
