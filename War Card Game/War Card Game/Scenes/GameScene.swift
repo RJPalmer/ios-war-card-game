@@ -10,6 +10,17 @@ import SpriteKit
 final class GameScene: SKScene {
 
     private let viewModel = GameViewModel()
+    private var currentPlayerCard: Card?
+    private var currentCPUCard: Card?
+    private enum SceneState {
+        case idle
+        case animating
+        case warDealing
+        case warResolving
+        case gameOver
+    }
+
+    private var sceneState: SceneState = .idle
 
     // MARK: - Nodes
 
@@ -97,7 +108,7 @@ final class GameScene: SKScene {
 
         // Layout using proportional positioning (anchorPoint = 0.5,0.5)
 
-        let verticalSpacing = size.height * 0.15
+        let verticalSpacing = playerCardNode.size.height * 0.75
 
         // CPU Area (Top Third)
         cpuCardNode.position = CGPoint(x: 0, y: size.height * 0.30)
@@ -117,39 +128,166 @@ final class GameScene: SKScene {
     // MARK: - UI Updates
 
     private func updateUI() {
+        // Model-driven rendering using snapshot
 
-        let playerTextureName = viewModel.playerCardImageName ?? "card_back"
-        playerCardNode.texture = SKTexture(imageNamed: playerTextureName)
 
-        let cpuTextureName = viewModel.cpuCardImageName ?? "card_back"
-        cpuCardNode.texture = SKTexture(imageNamed: cpuTextureName)
+        if let playerCard = viewModel.snapshot.playerCard {
+            if currentPlayerCard != playerCard {
+                let texture = CardTextureManager.shared.texture(for: playerCard.rank,
+                                                                suit: playerCard.suit)
+                playerCardNode.texture = texture
+                currentPlayerCard = playerCard
+            }
+        } else {
+            playerCardNode.texture = SKTexture(imageNamed: "card_back")
+            currentPlayerCard = nil
+        }
 
-        resultLabel.text = viewModel.resultText
-        playerCountLabel.text = "Player Cards: \(viewModel.playerCardCount)"
-        cpuCountLabel.text = "CPU Cards: \(viewModel.cpuCardCount)"
+        if let cpuCard = viewModel.snapshot.cpuCard {
+            if currentCPUCard != cpuCard {
+                let texture = CardTextureManager.shared.texture(for: cpuCard.rank,
+                                                                suit: cpuCard.suit)
+                cpuCardNode.texture = texture
+                currentCPUCard = cpuCard
+            }
+        } else {
+            cpuCardNode.texture = SKTexture(imageNamed: "card_back")
+            currentCPUCard = nil
+        }
 
-        if viewModel.isGameOver {
+        resultLabel.text = "" // optional: remove UI-dependent strings
+
+        playerCountLabel.text = "Player Cards: \(viewModel.snapshot.playerCardCount)"
+        cpuCountLabel.text = "CPU Cards: \(viewModel.snapshot.cpuCardCount)"
+
+        if case .finished = viewModel.snapshot.state {
+            sceneState = .gameOver
+        } else if sceneState != .animating && sceneState != .warDealing && sceneState != .warResolving {
+            sceneState = .idle
+        }
+
+        updatePlayButtonState()
+    }
+
+    private func updatePlayButtonState() {
+        if sceneState == .gameOver {
             playButton.fillColor = .gray
         } else {
             playButton.fillColor = .white
         }
     }
 
+    // MARK: - Turn Animation
+
+    private func runTurnAnimation() {
+        sceneState = .animating
+
+        let flipOutPlayer = SKAction.scaleX(to: 0, duration: 0.12)
+        let flipOutCPU = SKAction.scaleX(to: 0, duration: 0.12)
+
+        playerCardNode.run(flipOutPlayer)
+        cpuCardNode.run(flipOutCPU)
+
+        run(SKAction.wait(forDuration: 0.13)) { [weak self] in
+            guard let self = self else { return }
+
+            self.viewModel.playTurn()
+            self.updateUI()
+
+            let flipInPlayer = SKAction.scaleX(to: 1, duration: 0.12)
+            let flipInCPU = SKAction.scaleX(to: 1, duration: 0.12)
+
+            self.playerCardNode.run(flipInPlayer)
+            self.cpuCardNode.run(flipInCPU)
+
+
+            if self.viewModel.snapshot.state == .war {
+                self.run(SKAction.wait(forDuration: 0.25)) {
+                    self.runWarAnimation()
+                }
+            } else {
+                self.run(SKAction.wait(forDuration: 0.2)) {
+                    self.finishTurn()
+                }
+            }
+        }
+    }
+
+    private func runWarAnimation() {
+        sceneState = .warDealing
+
+        let centerPosition = CGPoint(x: 0, y: 0)
+
+        let movePlayer = SKAction.move(to: centerPosition.applying(CGAffineTransform(translationX: -20, y: 0)), duration: 0.2)
+        let moveCPU = SKAction.move(to: centerPosition.applying(CGAffineTransform(translationX: 20, y: 0)), duration: 0.2)
+
+        let scaleDown = SKAction.scale(to: 0.55, duration: 0.2)
+
+        playerCardNode.run(SKAction.group([movePlayer, scaleDown]))
+        cpuCardNode.run(SKAction.group([moveCPU, scaleDown]))
+
+        run(SKAction.wait(forDuration: 0.35)) { [weak self] in
+            guard let self = self else { return }
+            self.resolveWarBattle()
+        }
+    }
+
+    private func resolveWarBattle() {
+        sceneState = .warResolving
+
+        let flipOutPlayer = SKAction.scaleX(to: 0, duration: 0.12)
+        let flipOutCPU = SKAction.scaleX(to: 0, duration: 0.12)
+
+        playerCardNode.run(flipOutPlayer)
+        cpuCardNode.run(flipOutCPU)
+
+        run(SKAction.wait(forDuration: 0.13)) { [weak self] in
+            guard let self = self else { return }
+
+            self.viewModel.playTurn()
+            self.updateUI()
+
+            let flipInPlayer = SKAction.scaleX(to: 1, duration: 0.12)
+            let flipInCPU = SKAction.scaleX(to: 1, duration: 0.12)
+
+            self.playerCardNode.run(flipInPlayer)
+            self.cpuCardNode.run(flipInCPU)
+
+            self.run(SKAction.wait(forDuration: 0.25)) {
+                self.resetCardPositions()
+                self.finishTurn()
+            }
+        }
+    }
+
+    private func resetCardPositions() {
+        let resetPlayer = SKAction.move(to: CGPoint(x: 0, y: -size.height * 0.25), duration: 0.2)
+        let resetCPU = SKAction.move(to: CGPoint(x: 0, y: size.height * 0.30), duration: 0.2)
+        let scaleUp = SKAction.scale(to: 0.65, duration: 0.2)
+
+        playerCardNode.run(SKAction.group([resetPlayer, scaleUp]))
+        cpuCardNode.run(SKAction.group([resetCPU, scaleUp]))
+    }
+
+    private func finishTurn() {
+
+        if case .finished = viewModel.snapshot.state {
+            sceneState = .gameOver
+        } else {
+            sceneState = .idle
+        }
+    }
+
     // MARK: - Touch Handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-        let nodesAtPoint = nodes(at: location)
 
-        if nodesAtPoint.contains(where: { $0.name == "playButton" || $0.parent?.name == "playButton" }) {
+        guard playButton.contains(location),
+              sceneState == .idle else { return }
 
-            guard !viewModel.isGameOver else { return }
-
-            viewModel.playTurn()
-            updateUI()
-        }
+        runTurnAnimation()
     }
 }
  

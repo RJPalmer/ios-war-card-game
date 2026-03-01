@@ -8,7 +8,8 @@
 import Foundation
 
 enum Rank: Int, CaseIterable, Comparable {
-    case two = 2
+    case ace = 0
+    case two
     case three
     case four
     case five
@@ -20,7 +21,7 @@ enum Rank: Int, CaseIterable, Comparable {
     case jack
     case queen
     case king
-    case ace
+   
 
     // Comparable conformance (important for War comparisons)
     static func < (lhs: Rank, rhs: Rank) -> Bool {

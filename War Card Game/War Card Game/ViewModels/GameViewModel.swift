@@ -9,59 +9,46 @@ import Foundation
 
 final class GameViewModel {
 
-    private let engine = GameEngine()
-    var playerCardImageName: String?
-    var cpuCardImageName: String?
-    var playerCardCount: Int = 0
-    var cpuCardCount: Int = 0
-    var resultText: String = ""
+    struct TurnSnapshot {
+        let playerCard: Card?
+        let cpuCard: Card?
+        let playerCardCount: Int
+        let cpuCardCount: Int
+        let state: GameEngine.GameState
+    }
+
+    private let engine: GameEngine
+    private(set) var snapshot: TurnSnapshot
+
     var isGameOver: Bool {
-        if case .finished = engine.state { return true }
+        if case .finished = snapshot.state { return true }
         return false
     }
 
-    init() {
-        // Prepare and start the game according to GameEngine API
+    init(engine: GameEngine = GameEngine()) {
+        self.engine = engine
         engine.startGame()
-        syncState()
+        snapshot = GameViewModel.makeSnapshot(from: engine)
     }
 
-    func playTurn() {
-        guard !isGameOver else { return }
+    @discardableResult
+    func playTurn() -> TurnSnapshot {
+        guard !isGameOver else { return snapshot }
 
-        // Play a single turn according to GameEngine API
-        _ = engine.playTurn()
-        syncState()
+        let _ = engine.playTurn()
+        snapshot = GameViewModel.makeSnapshot(from: engine)
+        return snapshot
     }
 
-    private func syncState() {
-        // Derive last played cards from the battle pile if available
-        // Assuming the last two cards in battlePile correspond to the most recent flip
-        if engine.battlePile.count >= 2 {
-            let lastTwo = engine.battlePile.suffix(2)
-            // Order assumption: player1 then player2
-            let cards = Array(lastTwo)
-            playerCardImageName = cards.first?.suit.rawValue
-            cpuCardImageName = cards.last?.suit.rawValue
-        } else {
-            playerCardImageName = nil
-            cpuCardImageName = nil
-        }
+    private static func makeSnapshot(from engine: GameEngine) -> TurnSnapshot {
+        let currentTurn = engine.currentTurnResult
 
-        // Update card counts from players
-        playerCardCount = engine.player1.cardCount
-        cpuCardCount = engine.player2.cardCount
-
-        // Update result text based on state
-        switch engine.state {
-        case .idle:
-            resultText = ""
-        case .active:
-            resultText = ""
-        case .war:
-            resultText = "WAR!"
-        case .finished(let winner):
-            resultText = "Winner: \(winner.name)"
-        }
+        return TurnSnapshot(
+            playerCard: currentTurn?.playerCardDrawn,
+            cpuCard: currentTurn?.cpuCardDrawn,
+            playerCardCount: currentTurn?.playerCardCount ?? 0,
+            cpuCardCount: currentTurn?.cpuCardCount ?? 0,
+            state: currentTurn?.state ?? .idle
+        )
     }
 }

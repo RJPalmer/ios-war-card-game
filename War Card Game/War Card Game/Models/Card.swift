@@ -1,18 +1,19 @@
-//
-//  Card.swift
-//  War Card Game
-//
-//  Created by Robert Palmer on 2/10/26.
-//
-
-import Foundation
-
-struct Card: Comparable {
+struct Card: Comparable, Hashable {
     let suit: Suit
     let rank: Rank
 
-    // Comparable conformance — War only cares about rank
+    /// Explicit battle value for War (Ace high)
+    var warValue: Int {
+        switch rank {
+        case .ace:
+            return 14
+        default:
+            return rank.rawValue + 1
+        }
+    }
+
+    // Comparable conformance — War compares using explicit warValue
     static func < (lhs: Card, rhs: Card) -> Bool {
-        lhs.rank < rhs.rank
+        lhs.warValue < rhs.warValue
     }
 }

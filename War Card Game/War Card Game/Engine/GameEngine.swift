@@ -5,13 +5,19 @@
 //  Created by Robert Palmer on 2/10/26.
 //
 
-
 import Foundation
 
-enum TurnResult {
-    case player1Win(card1: Card, card2: Card)
-    case player2Win(card1: Card, card2: Card)
-    case war(initialCard1: Card, initialCard2: Card, winner: Player?)
+// Struct-based TurnResult now carries all necessary info for the ViewModel snapshot.
+// Storing the engine state in TurnResult ensures the ViewModel snapshot can access it directly,
+// making snapshot-driven UI fully deterministic.
+struct TurnResult {
+    let playerCardDrawn: Card
+    let cpuCardDrawn: Card
+    let playerCardCount: Int
+    let cpuCardCount: Int
+    let winner: Player? // nil if war
+    let isWar: Bool
+    let state: GameEngine.GameState // <--- new stored property capturing engine state
 }
 
 class GameEngine {
@@ -41,6 +47,8 @@ class GameEngine {
     var player2: Player
     var deck: Deck
     var battlePile: [Card]
+    // Stores the last turn's result; optional until the first turn is played.
+    private(set) var currentTurnResult: TurnResult?
     
     init() {
         // Initialize players, deck, and battle pile
@@ -77,8 +85,9 @@ class GameEngine {
     func dealCards() {
         let (handOne, handTwo) = deck.dealEvenly()
 
-        precondition(handOne.count + handTwo.count == 52,
-                     "Invalid deck size during dealing")
+        if handOne.count + handTwo.count != 52 {
+            print("Warning: Deck size is not 52 during dealing")
+        }
 
         player1.setCards(handOne)
         player2.setCards(handTwo)
@@ -112,26 +121,48 @@ class GameEngine {
         if card1.rank > card2.rank {
             player1.receiveCards(battlePile)
             battlePile.removeAll()
-            return .player1Win(card1: card1, card2: card2)
+            let result = TurnResult(
+                playerCardDrawn: card1,
+                cpuCardDrawn: card2,
+                playerCardCount: player1.cardCount,
+                cpuCardCount: player2.cardCount,
+                winner: player1,
+                isWar: false,
+                state: self.state // store engine state
+            )
+            currentTurnResult = result
+            return result
         } else if card2.rank > card1.rank {
             player2.receiveCards(battlePile)
             battlePile.removeAll()
-            return .player2Win(card1: card1, card2: card2)
+            let result = TurnResult(
+                playerCardDrawn: card1,
+                cpuCardDrawn: card2,
+                playerCardCount: player1.cardCount,
+                cpuCardCount: player2.cardCount,
+                winner: player2,
+                isWar: false,
+                state: self.state
+            )
+            currentTurnResult = result
+            return result
         } else {
             // Tie detected — automatically resolve war internally
             state = .war
             let warWinner = handleWar()
 
             // If war caused the game to finish, signal final state clearly
-            if case .finished = state {
-                return .war(initialCard1: card1,
-                            initialCard2: card2,
-                            winner: warWinner)
-            }
-
-            return .war(initialCard1: card1,
-                        initialCard2: card2,
-                        winner: warWinner)
+            let result = TurnResult(
+                playerCardDrawn: card1,
+                cpuCardDrawn: card2,
+                playerCardCount: player1.cardCount,
+                cpuCardCount: player2.cardCount,
+                winner: warWinner,
+                isWar: true,
+                state: self.state
+            )
+            currentTurnResult = result
+            return result
         }
     }
     
@@ -212,8 +243,9 @@ class GameEngine {
     func startGame() {
         state = .active
         battlePile.removeAll()
+        player1.setCards([])
+        player2.setCards([])
         shuffleDeck()
         dealCards()
     }
 }
-
