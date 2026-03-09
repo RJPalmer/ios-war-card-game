@@ -160,11 +160,7 @@ final class GameScene: SKScene {
         playerCountLabel.text = "Player Cards: \(viewModel.snapshot.playerCardCount)"
         cpuCountLabel.text = "CPU Cards: \(viewModel.snapshot.cpuCardCount)"
 
-        if case .finished = viewModel.snapshot.state {
-            sceneState = .gameOver
-        } else if sceneState != .animating && sceneState != .warDealing && sceneState != .warResolving {
-            sceneState = .idle
-        }
+        syncSceneStateWithSnapshot()
 
         updatePlayButtonState()
     }
@@ -174,6 +170,23 @@ final class GameScene: SKScene {
             playButton.fillColor = .gray
         } else {
             playButton.fillColor = .white
+        }
+    }
+
+    /// Keeps the SpriteKit scene state synchronized with the ViewModel snapshot
+    /// while avoiding interference with active animations.
+    private func syncSceneStateWithSnapshot() {
+
+        // Never override state while animations are running
+        if sceneState == .animating || sceneState == .warDealing || sceneState == .warResolving {
+            return
+        }
+
+        switch viewModel.snapshot.state {
+        case .finished:
+            sceneState = .gameOver
+        default:
+            sceneState = .idle
         }
     }
 
@@ -270,12 +283,7 @@ final class GameScene: SKScene {
     }
 
     private func finishTurn() {
-
-        if case .finished = viewModel.snapshot.state {
-            sceneState = .gameOver
-        } else {
-            sceneState = .idle
-        }
+        syncSceneStateWithSnapshot()
     }
 
     // MARK: - Touch Handling
