@@ -12,11 +12,7 @@ final class CardTextureManager {
 
     static let shared = CardTextureManager()
 
-    private lazy var sheetTexture: SKTexture = {
-        let texture = SKTexture(imageNamed: "card_spritesheet")
-        texture.filteringMode = .nearest
-        return texture
-    }()
+    private let sheetTexture: SKTexture
 
     /// Cache of already-sliced textures.
     /// Key is computed from rankIndex * rows + suitIndex to uniquely identify each card.
@@ -25,12 +21,30 @@ final class CardTextureManager {
     private let columns = 13
     private let rows = 4
 
+    private let sheetPixelWidth: CGFloat
+    private let sheetPixelHeight: CGFloat
+
+    private let cardPixelWidth: CGFloat
+    private let cardPixelHeight: CGFloat
+
     private let cardWidth: CGFloat
     private let cardHeight: CGFloat
 
     private init() {
-        cardWidth = 1.0 / CGFloat(columns)
-        cardHeight = 1.0 / CGFloat(rows)
+        self.sheetTexture = SKTexture(imageNamed: "CardSpriteSheet")
+        self.sheetTexture.filteringMode = .nearest
+
+        let size = sheetTexture.size()
+
+        sheetPixelWidth = size.width
+        sheetPixelHeight = size.height
+
+        cardPixelWidth = sheetPixelWidth / CGFloat(columns)
+        cardPixelHeight = sheetPixelHeight / CGFloat(rows)
+
+        // Convert pixel dimensions to normalized SpriteKit texture coordinates
+        cardWidth = cardPixelWidth / sheetPixelWidth
+        cardHeight = cardPixelHeight / sheetPixelHeight
 
         cache.reserveCapacity(52)
 
@@ -39,31 +53,35 @@ final class CardTextureManager {
     }
 
     func texture(for rank: Rank, suit: Suit) -> SKTexture {
-        // Convert rank to a 0...12 index (since Rank.rawValue is 2...14)
-        let rankIndex = rank.rawValue - 2
 
-        // Determine suit index using Suit.allCases order
+        if(rank.rawValue == 14){
+            let rankIndex = 0
+        }
+        let rankIndex = rank.rawValue - 1
+
         guard let suitIndex = Suit.allCases.firstIndex(of: suit) else {
             fatalError("Invalid suit index")
         }
 
-        // Unique cache key for this card
-        let key = rankIndex * rows + suitIndex
+        // Safer unique cache key
+        let key = suitIndex * columns + rankIndex
         if let cached = cache[key] { return cached }
 
-        // Column corresponds to rank (0...12)
         let column = rankIndex
 
-        // Sprite sheet rows are typically stored top→bottom, but SpriteKit
-        // texture coordinates are bottom→top, so we flip the row index.
         let visualRow = suitIndex
         let spriteRow = rows - 1 - visualRow
 
+        // Slight inset (1 pixel) based on real sprite sheet size to avoid texture bleeding
+        let pixelInset: CGFloat = 1
+        let insetX = pixelInset / sheetPixelWidth
+        let insetY = pixelInset / sheetPixelHeight
+
         let rect = CGRect(
-            x: CGFloat(column) * cardWidth,
-            y: CGFloat(spriteRow) * cardHeight,
-            width: cardWidth,
-            height: cardHeight
+            x: CGFloat(column) * cardWidth + insetX,
+            y: CGFloat(spriteRow) * cardHeight + insetY,
+            width: cardWidth - insetX,
+            height: cardHeight - insetY
         )
 
         let texture = SKTexture(rect: rect, in: sheetTexture)
@@ -71,6 +89,32 @@ final class CardTextureManager {
 
         cache[key] = texture
         return texture
+    }
+
+    /// DEBUG: Creates a small overlay label showing the card's rank and suit.
+    /// Attach this to a card node while debugging sprite sheet mapping.
+    func debugLabel(for rank: Rank, suit: Suit) -> SKNode {
+
+        let container = SKNode()
+
+        let label = SKLabelNode(fontNamed: "Menlo-Bold")
+        label.fontSize = 18
+        label.fontColor = .yellow
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.text = "\(rank) \(suit)"
+        label.zPosition = 999
+
+        let background = SKShapeNode(rectOf: CGSize(width: 120, height: 28), cornerRadius: 6)
+        background.fillColor = .black
+        background.alpha = 0.6
+        background.strokeColor = .clear
+        background.zPosition = 998
+
+        container.addChild(background)
+        container.addChild(label)
+
+        return container
     }
 
     /// Preloads all 52 card textures into the cache during initialization.

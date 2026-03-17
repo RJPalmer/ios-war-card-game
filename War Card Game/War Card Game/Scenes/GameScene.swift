@@ -133,16 +133,30 @@ final class GameScene: SKScene {
 
         if let playerCard = viewModel.snapshot.playerCard {
             if currentPlayerCard != playerCard {
-                let texture = CardTextureManager.shared.texture(for: playerCard.rank,
-                                                                suit: playerCard.suit)
+
+                let texture = CardTextureManager.shared.texture(
+                    for: playerCard.rank,
+                    suit: playerCard.suit
+                )
+
                 playerCardNode.texture = texture
+
+                #if DEBUG
+                // Remove previous debug label
+                playerCardNode.childNode(withName: "debugLabel")?.removeFromParent()
+
+                // Add updated label
+                let label = CardTextureManager.shared.debugLabel(
+                    for: playerCard.rank,
+                    suit: playerCard.suit
+                )
+                label.name = "debugLabel"
+                playerCardNode.addChild(label)
+                #endif
+
                 currentPlayerCard = playerCard
             }
-        } else {
-            playerCardNode.texture = SKTexture(imageNamed: "card_back")
-            currentPlayerCard = nil
         }
-
         if let cpuCard = viewModel.snapshot.cpuCard {
             if currentCPUCard != cpuCard {
                 let texture = CardTextureManager.shared.texture(for: cpuCard.rank,
@@ -193,6 +207,8 @@ final class GameScene: SKScene {
     // MARK: - Turn Animation
 
     private func runTurnAnimation() {
+        // Production safety: disable input while animations run
+        isUserInteractionEnabled = false
         sceneState = .animating
 
         let flipOutPlayer = SKAction.scaleX(to: 0, duration: 0.12)
@@ -283,12 +299,21 @@ final class GameScene: SKScene {
     }
 
     private func finishTurn() {
+
+        // Animation is complete
+        sceneState = .idle
+
+        // Now sync with model state
         syncSceneStateWithSnapshot()
+
+        // Re-enable input
+        isUserInteractionEnabled = true
     }
 
     // MARK: - Touch Handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        print("SceneState:", sceneState)
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
