@@ -439,13 +439,10 @@ final class GameScene: SKScene {
     }
 
     private func gatherWarPileAndAward() {
-        // Determine winner based on snapshot after resolve
+        // Determine winner based on revealed upcards after resolve
         var winnerIsPlayer = false
-        if case .finished(let winner) = viewModel.snapshot.state {
-            winnerIsPlayer = (winner == .player)
-        } else if let p = viewModel.snapshot.playerCard, let c = viewModel.snapshot.cpuCard {
-            // Fallback: compare ranks if available in snapshot semantics
-            winnerIsPlayer = p.rank.value > c.rank.value
+        if let p = viewModel.snapshot.playerCard, let c = viewModel.snapshot.cpuCard {
+            winnerIsPlayer = p.rank > c.rank
         }
 
         let pilePoint = warCenter
