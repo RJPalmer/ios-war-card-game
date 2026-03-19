@@ -55,7 +55,7 @@ final class CardTextureManager {
     func texture(for rank: Rank, suit: Suit) -> SKTexture {
 
         if(rank.rawValue == 14){
-            let rankIndex = 0
+            _ = 0
         }
         let rankIndex = rank.rawValue - 1
 

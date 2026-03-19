@@ -162,6 +162,18 @@ final class GameScene: SKScene {
                 let texture = CardTextureManager.shared.texture(for: cpuCard.rank,
                                                                 suit: cpuCard.suit)
                 cpuCardNode.texture = texture
+                
+                #if DEBUG
+                cpuCardNode.childNode(withName: "debugLabel")?.removeFromParent()
+                
+                //add updated label
+                let label = CardTextureManager.shared.debugLabel(
+                    for: cpuCard.rank,
+                    suit: cpuCard.suit
+                    )
+                label.name = "debugLabel"
+                cpuCardNode.addChild(label)
+                #endif
                 currentCPUCard = cpuCard
             }
         } else {
