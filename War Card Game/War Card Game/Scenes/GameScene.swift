@@ -9,6 +9,49 @@ import SpriteKit
 
 final class GameScene: SKScene {
 
+    // MARK: - War Animation Support
+    private var warPlayerFaceDownNodes: [SKSpriteNode] = []
+    private var warCPUFaceDownNodes: [SKSpriteNode] = []
+    private var warPlayerFaceUpNode: SKSpriteNode?
+    private var warCPUFaceUpNode: SKSpriteNode?
+
+    private var warAllTempNodes: [SKNode] {
+        var nodes: [SKNode] = []
+        nodes.append(contentsOf: warPlayerFaceDownNodes)
+        nodes.append(contentsOf: warCPUFaceDownNodes)
+        if let n = warPlayerFaceUpNode { nodes.append(n) }
+        if let n = warCPUFaceUpNode { nodes.append(n) }
+        return nodes
+    }
+
+    private var warCenter: CGPoint { CGPoint(x: 0, y: 0) }
+    private var warPlayerLaneY: CGFloat { -size.height * 0.05 }
+    private var warCPULaneY: CGFloat { size.height * 0.05 }
+    private let warCardScale: CGFloat = 0.5
+    private let warCardSpacing: CGFloat = 16
+
+    private func makeCardNode(texture: SKTexture, scale: CGFloat, z: CGFloat = 0) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: texture)
+        node.size = CGSize(width: CardNode.defaultSize.width, height: CardNode.defaultSize.height)
+        node.setScale(scale)
+        node.zPosition = z
+        return node
+    }
+
+    private func makeFaceDownNode(scale: CGFloat) -> SKSpriteNode {
+        return makeCardNode(texture: SKTexture(imageNamed: "card_back"), scale: scale)
+    }
+
+    private func warPositions(isPlayer: Bool, count: Int) -> [CGPoint] {
+        guard count > 0 else { return [] }
+        let baseY = isPlayer ? warPlayerLaneY : warCPULaneY
+        let totalWidth = CGFloat(max(count - 1, 0)) * warCardSpacing
+        return (0..<count).map { i in
+            let x = -totalWidth / 2 + CGFloat(i) * warCardSpacing
+            return CGPoint(x: x, y: baseY)
+        }
+    }
+
     private let viewModel = GameViewModel()
     private var currentPlayerCard: Card?
     private var currentCPUCard: Card?
@@ -257,47 +300,185 @@ final class GameScene: SKScene {
     private func runWarAnimation() {
         sceneState = .warDealing
 
-        let centerPosition = CGPoint(x: 0, y: 0)
-
-        let movePlayer = SKAction.move(to: centerPosition.applying(CGAffineTransform(translationX: -20, y: 0)), duration: 0.2)
-        let moveCPU = SKAction.move(to: centerPosition.applying(CGAffineTransform(translationX: 20, y: 0)), duration: 0.2)
-
-        let scaleDown = SKAction.scale(to: 0.55, duration: 0.2)
+        // Move main cards to lanes and shrink to make room
+        let playerLanePos = CGPoint(x: -20, y: warPlayerLaneY)
+        let cpuLanePos = CGPoint(x: 20, y: warCPULaneY)
+        let movePlayer = SKAction.move(to: playerLanePos, duration: 0.2)
+        let moveCPU = SKAction.move(to: cpuLanePos, duration: 0.2)
+        let scaleDown = SKAction.scale(to: warCardScale, duration: 0.2)
 
         playerCardNode.run(SKAction.group([movePlayer, scaleDown]))
         cpuCardNode.run(SKAction.group([moveCPU, scaleDown]))
 
-        run(SKAction.wait(forDuration: 0.35)) { [weak self] in
+        run(SKAction.wait(forDuration: 0.25)) { [weak self] in
             guard let self = self else { return }
-            self.resolveWarBattle()
+            self.dealWarCards()
         }
     }
 
     private func resolveWarBattle() {
         sceneState = .warResolving
 
-        let flipOutPlayer = SKAction.scaleX(to: 0, duration: 0.12)
-        let flipOutCPU = SKAction.scaleX(to: 0, duration: 0.12)
-
-        playerCardNode.run(flipOutPlayer)
-        cpuCardNode.run(flipOutCPU)
+        let flipOut = SKAction.scaleX(to: 0, duration: 0.12)
+        warPlayerFaceUpNode?.run(flipOut)
+        warCPUFaceUpNode?.run(flipOut)
 
         run(SKAction.wait(forDuration: 0.13)) { [weak self] in
             guard let self = self else { return }
 
+            // Advance the model to reveal war upcards and determine winner
             self.viewModel.playTurn()
             self.updateUI()
 
-            let flipInPlayer = SKAction.scaleX(to: 1, duration: 0.12)
-            let flipInCPU = SKAction.scaleX(to: 1, duration: 0.12)
+            if let pCard = self.viewModel.snapshot.playerCard {
+                let tex = CardTextureManager.shared.texture(for: pCard.rank, suit: pCard.suit)
+                self.warPlayerFaceUpNode?.texture = tex
+            }
+            if let cCard = self.viewModel.snapshot.cpuCard {
+                let tex = CardTextureManager.shared.texture(for: cCard.rank, suit: cCard.suit)
+                self.warCPUFaceUpNode?.texture = tex
+            }
 
-            self.playerCardNode.run(flipInPlayer)
-            self.cpuCardNode.run(flipInCPU)
+            let flipIn = SKAction.scaleX(to: 1, duration: 0.12)
+            self.warPlayerFaceUpNode?.run(flipIn)
+            self.warCPUFaceUpNode?.run(flipIn)
 
             self.run(SKAction.wait(forDuration: 0.25)) {
-                self.resetCardPositions()
-                self.finishTurn()
+                self.gatherWarPileAndAward()
             }
+        }
+    }
+
+    private func dealWarCards() {
+        // Determine how many cards each side can place according to n-1 down, last up rule
+        let playerRemaining = viewModel.snapshot.playerCardCount
+        let cpuRemaining = viewModel.snapshot.cpuCardCount
+        let pN = max(min(4, playerRemaining), 0)
+        let cN = max(min(4, cpuRemaining), 0)
+
+        let playerPositions = warPositions(isPlayer: true, count: pN)
+        let cpuPositions = warPositions(isPlayer: false, count: cN)
+
+        // Player face-down cards
+        if pN > 1 {
+            for i in 0..<(pN - 1) {
+                let node = makeFaceDownNode(scale: warCardScale)
+                node.position = playerCardNode.position
+                node.alpha = 0
+                addChild(node)
+                warPlayerFaceDownNodes.append(node)
+
+                let delay = 0.06 * Double(i)
+                node.run(SKAction.sequence([
+                    SKAction.wait(forDuration: delay),
+                    SKAction.group([
+                        SKAction.fadeIn(withDuration: 0.08),
+                        SKAction.move(to: playerPositions[i], duration: 0.15)
+                    ])
+                ]))
+            }
+        }
+
+        // CPU face-down cards
+        if cN > 1 {
+            for i in 0..<(cN - 1) {
+                let node = makeFaceDownNode(scale: warCardScale)
+                node.position = cpuCardNode.position
+                node.alpha = 0
+                addChild(node)
+                warCPUFaceDownNodes.append(node)
+
+                let delay = 0.06 * Double(i)
+                node.run(SKAction.sequence([
+                    SKAction.wait(forDuration: delay),
+                    SKAction.group([
+                        SKAction.fadeIn(withDuration: 0.08),
+                        SKAction.move(to: cpuPositions[i], duration: 0.15)
+                    ])
+                ]))
+            }
+        }
+
+        // Stage last card initially face-down; will flip in resolveWarBattle
+        if pN > 0 {
+            let node = makeFaceDownNode(scale: warCardScale)
+            node.position = playerCardNode.position
+            node.alpha = 0
+            addChild(node)
+            warPlayerFaceUpNode = node
+            let delay = 0.06 * Double(max(pN - 1, 0))
+            node.run(SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                SKAction.group([
+                    SKAction.fadeIn(withDuration: 0.08),
+                    SKAction.move(to: playerPositions[max(pN - 1, 0)], duration: 0.15)
+                ])
+            ]))
+        }
+
+        if cN > 0 {
+            let node = makeFaceDownNode(scale: warCardScale)
+            node.position = cpuCardNode.position
+            node.alpha = 0
+            addChild(node)
+            warCPUFaceUpNode = node
+            let delay = 0.06 * Double(max(cN - 1, 0))
+            node.run(SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                SKAction.group([
+                    SKAction.fadeIn(withDuration: 0.08),
+                    SKAction.move(to: cpuPositions[max(cN - 1, 0)], duration: 0.15)
+                ])
+            ]))
+        }
+
+        // After dealing finishes, move to resolution
+        run(SKAction.wait(forDuration: 0.35)) { [weak self] in
+            self?.resolveWarBattle()
+        }
+    }
+
+    private func gatherWarPileAndAward() {
+        // Determine winner based on snapshot after resolve
+        var winnerIsPlayer = false
+        if case .finished(let winner) = viewModel.snapshot.state {
+            winnerIsPlayer = (winner == .player)
+        } else if let p = viewModel.snapshot.playerCard, let c = viewModel.snapshot.cpuCard {
+            // Fallback: compare ranks if available in snapshot semantics
+            winnerIsPlayer = p.rank.value > c.rank.value
+        }
+
+        let pilePoint = warCenter
+        let target = winnerIsPlayer ? CGPoint(x: 0, y: -size.height * 0.35) : CGPoint(x: 0, y: size.height * 0.40)
+
+        let allNodes = warAllTempNodes
+        for (i, node) in allNodes.enumerated() {
+            let delay = 0.04 * Double(i)
+            let moveToPile = SKAction.group([
+                SKAction.move(to: pilePoint, duration: 0.18),
+                SKAction.rotate(byAngle: CGFloat.random(in: -0.06...0.06), duration: 0.18)
+            ])
+            let moveToWinner = SKAction.group([
+                SKAction.move(to: target, duration: 0.22),
+                SKAction.fadeOut(withDuration: 0.22)
+            ])
+            node.run(SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                moveToPile,
+                SKAction.wait(forDuration: 0.06),
+                moveToWinner,
+                SKAction.removeFromParent()
+            ]))
+        }
+
+        run(SKAction.wait(forDuration: 0.65)) { [weak self] in
+            guard let self = self else { return }
+            self.resetCardPositions()
+            self.warPlayerFaceDownNodes.removeAll()
+            self.warCPUFaceDownNodes.removeAll()
+            self.warPlayerFaceUpNode = nil
+            self.warCPUFaceUpNode = nil
+            self.finishTurn()
         }
     }
 
