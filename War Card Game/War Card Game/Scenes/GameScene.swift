@@ -63,7 +63,20 @@ final class GameScene: SKScene {
         case gameOver
     }
 
-    private var sceneState: SceneState = .idle
+    #if DEBUG
+    private func logSceneStateChange(from old: SceneState, to new: SceneState) {
+        guard old != new else { return }
+        print("SceneState changed: \(old) -> \(new)")
+    }
+    #endif
+
+    private var sceneState: SceneState = .idle {
+        didSet {
+            #if DEBUG
+            logSceneStateChange(from: oldValue, to: sceneState)
+            #endif
+        }
+    }
 
     // MARK: - Nodes
 
