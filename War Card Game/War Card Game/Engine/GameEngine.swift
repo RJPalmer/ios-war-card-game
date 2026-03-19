@@ -42,7 +42,40 @@ class GameEngine {
         }
     }
 
-    private(set) var state: GameState = .idle
+    #if DEBUG
+    private func logGameStateChange(from old: GameState, to new: GameState) {
+        guard old != new else { return }
+        print("GameState changed: \(old) -> \(new)")
+    }
+    #endif
+
+    #if DEBUG
+    private func logBattleResult(playerCard: Card, cpuCard: Card, winner: Player?, isWar: Bool) {
+        let p = "P1: \(playerCard.rank.displayName) of \(playerCard.suit.displayName)"
+        let c = "CPU: \(cpuCard.rank.displayName) of \(cpuCard.suit.displayName)"
+        if isWar {
+            if let winner = winner {
+                print("Battle (WAR) => \(p) vs \(c) -> Winner: \(winner.name)")
+            } else {
+                print("Battle (WAR) => \(p) vs \(c) -> Continuing war (tie)")
+            }
+        } else {
+            if let winner = winner {
+                print("Battle => \(p) vs \(c) -> Winner: \(winner.name)")
+            } else {
+                print("Battle => \(p) vs \(c) -> Tie")
+            }
+        }
+    }
+    #endif
+
+    private(set) var state: GameState = .idle {
+        didSet {
+            #if DEBUG
+            logGameStateChange(from: oldValue, to: state)
+            #endif
+        }
+    }
     var player1: Player
     var player2: Player
     var deck: Deck
@@ -131,6 +164,9 @@ class GameEngine {
                 state: self.state // store engine state
             )
             currentTurnResult = result
+            #if DEBUG
+            logBattleResult(playerCard: card1, cpuCard: card2, winner: player1, isWar: false)
+            #endif
             return result
         } else if card2.rank > card1.rank {
             player2.receiveCards(battlePile)
@@ -145,6 +181,9 @@ class GameEngine {
                 state: self.state
             )
             currentTurnResult = result
+            #if DEBUG
+            logBattleResult(playerCard: card1, cpuCard: card2, winner: player2, isWar: false)
+            #endif
             return result
         } else {
             // Tie detected — automatically resolve war internally
@@ -162,6 +201,9 @@ class GameEngine {
                 state: self.state
             )
             currentTurnResult = result
+            #if DEBUG
+            logBattleResult(playerCard: card1, cpuCard: card2, winner: warWinner, isWar: true)
+            #endif
             return result
         }
     }
@@ -181,6 +223,9 @@ class GameEngine {
                 winner.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .finished(winner: winner)
+                #if DEBUG
+                print("War ended early: \(winner.name) wins due to insufficient cards on opponent")
+                #endif
                 return winner
             }
 
@@ -189,6 +234,9 @@ class GameEngine {
                 winner.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .finished(winner: winner)
+                #if DEBUG
+                print("War ended early: \(winner.name) wins due to insufficient cards on opponent")
+                #endif
                 return winner
             }
 
@@ -210,6 +258,9 @@ class GameEngine {
                 winner.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .finished(winner: winner)
+                #if DEBUG
+                print("War ended due to draw failure: \(winner.name) collects battle pile")
+                #endif
                 return winner
             }
 
@@ -221,11 +272,17 @@ class GameEngine {
                 player1.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .active
+                #if DEBUG
+                print("War resolved: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player1.name)")
+                #endif
                 return player1
             } else if warCard2.rank > warCard1.rank {
                 player2.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .active
+                #if DEBUG
+                print("War resolved: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player2.name)")
+                #endif
                 return player2
             }
 
@@ -237,6 +294,9 @@ class GameEngine {
         winner.receiveCards(battlePile)
         battlePile.removeAll()
         state = .active
+        #if DEBUG
+        print("War failsafe: awarding pile to \(winner.name) (higher remaining count)")
+        #endif
         return winner
     }
     
@@ -249,3 +309,4 @@ class GameEngine {
         dealCards()
     }
 }
+

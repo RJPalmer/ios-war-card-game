@@ -239,6 +239,12 @@ final class GameScene: SKScene {
 
         resultLabel.text = "" // optional: remove UI-dependent strings
 
+        #if DEBUG
+        if let p = viewModel.snapshot.playerCard, let c = viewModel.snapshot.cpuCard {
+            print("UI Snapshot -> Player: \(p.rank.displayName) of \(p.suit.displayName) | CPU: \(c.rank.displayName) of \(c.suit.displayName) | Counts: P=\(viewModel.snapshot.playerCardCount) CPU=\(viewModel.snapshot.cpuCardCount)")
+        }
+        #endif
+
         playerCountLabel.text = "Player Cards: \(viewModel.snapshot.playerCardCount)"
         cpuCountLabel.text = "CPU Cards: \(viewModel.snapshot.cpuCardCount)"
 
