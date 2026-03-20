@@ -237,7 +237,22 @@ final class GameScene: SKScene {
             currentCPUCard = nil
         }
 
-        resultLabel.text = "" // optional: remove UI-dependent strings
+        // Update result label: show WAR! when a war battle occurs
+        if viewModel.snapshot.isWar {
+            if resultLabel.text != "WAR!" {
+                resultLabel.alpha = 0
+                resultLabel.text = "WAR!"
+                resultLabel.fontColor = .systemYellow
+                let fadeIn = SKAction.fadeIn(withDuration: 0.15)
+                let pulseUp = SKAction.scale(to: 1.15, duration: 0.12)
+                let pulseDown = SKAction.scale(to: 1.0, duration: 0.12)
+                resultLabel.run(SKAction.sequence([fadeIn, pulseUp, pulseDown]))
+            }
+        } else {
+            resultLabel.text = ""
+            resultLabel.alpha = 1
+            resultLabel.fontColor = .white
+        }
 
         #if DEBUG
         if let p = viewModel.snapshot.playerCard, let c = viewModel.snapshot.cpuCard {
@@ -511,6 +526,11 @@ final class GameScene: SKScene {
 
         // Animation is complete
         sceneState = .idle
+
+        // Clear any transient result text when a turn fully completes
+        resultLabel.text = ""
+        resultLabel.alpha = 1
+        resultLabel.setScale(1.0)
 
         // Now sync with model state
         syncSceneStateWithSnapshot()
