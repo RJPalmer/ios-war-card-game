@@ -237,8 +237,9 @@ final class GameScene: SKScene {
             currentCPUCard = nil
         }
 
-        // Update result label: show WAR! when a war battle occurs
+        // Update result label: show WAR! when a war battle occurs and keep it until next play
         if viewModel.snapshot.isWar {
+            // Only set/animate when entering war state
             if resultLabel.text != "WAR!" {
                 resultLabel.alpha = 0
                 resultLabel.text = "WAR!"
@@ -249,9 +250,7 @@ final class GameScene: SKScene {
                 resultLabel.run(SKAction.sequence([fadeIn, pulseUp, pulseDown]))
             }
         } else {
-            resultLabel.text = ""
-            resultLabel.alpha = 1
-            resultLabel.fontColor = .white
+            // Do not clear here; allow finishTurn() or next turn start to clear
         }
 
         #if DEBUG
@@ -299,6 +298,12 @@ final class GameScene: SKScene {
         // Production safety: disable input while animations run
         isUserInteractionEnabled = false
         sceneState = .animating
+
+        // Clear any persistent result message (e.g., WAR!) at the start of a new turn
+        resultLabel.text = ""
+        resultLabel.alpha = 1
+        resultLabel.setScale(1.0)
+        resultLabel.fontColor = .white
 
         let flipOutPlayer = SKAction.scaleX(to: 0, duration: 0.12)
         let flipOutCPU = SKAction.scaleX(to: 0, duration: 0.12)
@@ -526,11 +531,6 @@ final class GameScene: SKScene {
 
         // Animation is complete
         sceneState = .idle
-
-        // Clear any transient result text when a turn fully completes
-        resultLabel.text = ""
-        resultLabel.alpha = 1
-        resultLabel.setScale(1.0)
 
         // Now sync with model state
         syncSceneStateWithSnapshot()
