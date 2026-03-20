@@ -270,8 +270,10 @@ final class GameScene: SKScene {
     private func updatePlayButtonState() {
         if sceneState == .gameOver {
             playButton.fillColor = .gray
+            playButton.alpha = 0.6
         } else {
             playButton.fillColor = .white
+            playButton.alpha = 1.0
         }
     }
 
@@ -287,6 +289,18 @@ final class GameScene: SKScene {
         switch viewModel.snapshot.state {
         case .finished:
             sceneState = .gameOver
+            // Show Game Over message with winner name if available
+            if let name = viewModel.snapshot.winnerName, !name.isEmpty {
+                resultLabel.text = "Game Over — \(name) Wins"
+            } else {
+                resultLabel.text = "Game Over"
+            }
+            resultLabel.fontColor = .systemRed
+            resultLabel.alpha = 0
+            let fadeIn = SKAction.fadeIn(withDuration: 0.2)
+            let pulseUp = SKAction.scale(to: 1.15, duration: 0.12)
+            let pulseDown = SKAction.scale(to: 1.0, duration: 0.12)
+            resultLabel.run(SKAction.sequence([fadeIn, pulseUp, pulseDown]))
         default:
             sceneState = .idle
         }
