@@ -15,6 +15,7 @@ final class GameViewModel {
         let playerCardCount: Int
         let cpuCardCount: Int
         let state: GameEngine.GameState
+        let isWar: Bool
     }
 
     private let engine: GameEngine
@@ -48,7 +49,8 @@ final class GameViewModel {
             cpuCard: currentTurn?.cpuCardDrawn,
             playerCardCount: currentTurn?.playerCardCount ?? 0,
             cpuCardCount: currentTurn?.cpuCardCount ?? 0,
-            state: currentTurn?.state ?? .idle
+            state: currentTurn?.state ?? .idle,
+            isWar: currentTurn?.isWar ?? false
         )
     }
 }
