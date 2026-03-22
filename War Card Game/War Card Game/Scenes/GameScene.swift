@@ -314,7 +314,7 @@ final class GameScene: SKScene {
 
     private func runTurnAnimation() {
         // Prevent starting a new turn if the game is already over
-        if viewModel.isGameOver || (viewModel.snapshot.state == .finished) {
+        if viewModel.isGameOver {
             updatePlayButtonState()
             return
         }
