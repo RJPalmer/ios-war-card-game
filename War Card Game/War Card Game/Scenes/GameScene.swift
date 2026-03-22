@@ -361,6 +361,16 @@ final class GameScene: SKScene {
     private func runWarAnimation() {
         sceneState = .warDealing
 
+        // Safety: ensure we are actually in a war state and both sides have cards to place
+        guard viewModel.snapshot.isWar,
+              viewModel.snapshot.playerCardCount > 0,
+              viewModel.snapshot.cpuCardCount > 0 else {
+            // If not valid, reset positions and finish the turn gracefully
+            resetCardPositions()
+            finishTurn()
+            return
+        }
+
         // Move main cards to lanes and shrink to make room
         let playerLanePos = CGPoint(x: -20, y: warPlayerLaneY)
         let cpuLanePos = CGPoint(x: 20, y: warCPULaneY)
@@ -418,7 +428,24 @@ final class GameScene: SKScene {
     }
 
     private func dealWarCards() {
-        // Determine how many cards each side can place according to n-1 down, last up rule
+        // Guards to ensure valid war dealing conditions
+        guard sceneState == .warDealing || sceneState == .warResolving else { return }
+        guard viewModel.snapshot.isWar else { return }
+        guard viewModel.snapshot.playerCardCount >= 0, viewModel.snapshot.cpuCardCount >= 0 else { return }
+        // If both sides are at zero, nothing to deal; finish turn safely
+        guard (viewModel.snapshot.playerCardCount + viewModel.snapshot.cpuCardCount) > 0 else {
+            resetCardPositions()
+            finishTurn()
+            return
+        }
+
+        // Both players must have at least one card to place a face-up card
+        guard viewModel.snapshot.playerCardCount > 0, viewModel.snapshot.cpuCardCount > 0 else {
+            resetCardPositions()
+            finishTurn()
+            return
+        }
+
         let playerRemaining = viewModel.snapshot.playerCardCount
         let cpuRemaining = viewModel.snapshot.cpuCardCount
         let pN = max(min(4, playerRemaining), 0)
