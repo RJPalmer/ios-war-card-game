@@ -338,7 +338,7 @@ final class GameScene: SKScene {
             self.cpuCardNode.run(flipInCPU)
 
 
-            if self.viewModel.snapshot.state == .war {
+            if self.viewModel.snapshot.isWar {
                 self.run(SKAction.wait(forDuration: 0.25)) {
                     self.runWarAnimation()
                 }
