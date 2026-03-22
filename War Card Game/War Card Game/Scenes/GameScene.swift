@@ -331,6 +331,14 @@ final class GameScene: SKScene {
             self.viewModel.playTurn()
             self.updateUI()
 
+            if self.viewModel.isGameOver {
+                // End immediately; do not proceed with war/normal animations
+                self.run(SKAction.wait(forDuration: 0.1)) {
+                    self.finishTurn()
+                }
+                return
+            }
+
             let flipInPlayer = SKAction.scaleX(to: 1, duration: 0.12)
             let flipInCPU = SKAction.scaleX(to: 1, duration: 0.12)
 
@@ -382,6 +390,13 @@ final class GameScene: SKScene {
             // Advance the model to reveal war upcards and determine winner
             self.viewModel.playTurn()
             self.updateUI()
+
+            if self.viewModel.isGameOver {
+                self.sceneState = .gameOver
+                self.syncSceneStateWithSnapshot()
+                self.isUserInteractionEnabled = true
+                return
+            }
 
             if let pCard = self.viewModel.snapshot.playerCard {
                 let tex = CardTextureManager.shared.texture(for: pCard.rank, suit: pCard.suit)
@@ -561,7 +576,8 @@ final class GameScene: SKScene {
         let location = touch.location(in: self)
 
         guard playButton.contains(location),
-              sceneState == .idle else { return }
+              sceneState == .idle,
+              !viewModel.isGameOver else { return }
 
         runTurnAnimation()
     }
