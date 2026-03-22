@@ -296,6 +296,10 @@ final class GameScene: SKScene {
                 resultLabel.text = "Game Over"
             }
             resultLabel.fontColor = .systemRed
+            
+            // Immediately reflect disabled play button when finished
+            updatePlayButtonState()
+            
             resultLabel.alpha = 0
             let fadeIn = SKAction.fadeIn(withDuration: 0.2)
             let pulseUp = SKAction.scale(to: 1.15, duration: 0.12)
@@ -309,6 +313,12 @@ final class GameScene: SKScene {
     // MARK: - Turn Animation
 
     private func runTurnAnimation() {
+        // Prevent starting a new turn if the game is already over
+        if viewModel.isGameOver || (viewModel.snapshot.state == .finished) {
+            updatePlayButtonState()
+            return
+        }
+        
         // Production safety: disable input while animations run
         isUserInteractionEnabled = false
         sceneState = .animating
