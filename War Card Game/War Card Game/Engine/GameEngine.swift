@@ -5,15 +5,19 @@
 //  Created by Robert Palmer on 2/10/26.
 //
 
-
 import Foundation
-<<<<<<< Updated upstream
-=======
 
-enum TurnResult {
-    case player1Win(card1: Card, card2: Card)
-    case player2Win(card1: Card, card2: Card)
-    case war(initialCard1: Card, initialCard2: Card, winner: Player?)
+// Struct-based TurnResult now carries all necessary info for the ViewModel snapshot.
+// Storing the engine state in TurnResult ensures the ViewModel snapshot can access it directly,
+// making snapshot-driven UI fully deterministic.
+struct TurnResult {
+    let playerCardDrawn: Card
+    let cpuCardDrawn: Card
+    let playerCardCount: Int
+    let cpuCardCount: Int
+    let winner: Player? // nil if war
+    let isWar: Bool
+    let state: GameEngine.GameState // <--- new stored property capturing engine state
 }
 
 class GameEngine {
@@ -38,11 +42,46 @@ class GameEngine {
         }
     }
 
-    private(set) var state: GameState = .idle
+    #if DEBUG
+    private func logGameStateChange(from old: GameState, to new: GameState) {
+        guard old != new else { return }
+        print("GameState changed: \(old) -> \(new)")
+    }
+    #endif
+
+    #if DEBUG
+    private func logBattleResult(playerCard: Card, cpuCard: Card, winner: Player?, isWar: Bool) {
+        let p = "P1: \(playerCard.rank.displayName) of \(playerCard.suit.displayName)"
+        let c = "CPU: \(cpuCard.rank.displayName) of \(cpuCard.suit.displayName)"
+        if isWar {
+            if let winner = winner {
+                print("Battle (WAR) => \(p) vs \(c) -> Winner: \(winner.name)")
+            } else {
+                print("Battle (WAR) => \(p) vs \(c) -> Continuing war (tie)")
+            }
+        } else {
+            if let winner = winner {
+                print("Battle => \(p) vs \(c) -> Winner: \(winner.name)")
+            } else {
+                print("Battle => \(p) vs \(c) -> Tie")
+            }
+        }
+    }
+    #endif
+
+    private(set) var state: GameState = .idle {
+        didSet {
+            #if DEBUG
+            logGameStateChange(from: oldValue, to: state)
+            #endif
+        }
+    }
     var player1: Player
     var player2: Player
     var deck: Deck
     var battlePile: [Card]
+    // Stores the last turn's result; optional until the first turn is played.
+    private(set) var currentTurnResult: TurnResult?
     
     init() {
         // Initialize players, deck, and battle pile
@@ -79,8 +118,9 @@ class GameEngine {
     func dealCards() {
         let (handOne, handTwo) = deck.dealEvenly()
 
-        precondition(handOne.count + handTwo.count == 52,
-                     "Invalid deck size during dealing")
+        if handOne.count + handTwo.count != 52 {
+            print("Warning: Deck size is not 52 during dealing")
+        }
 
         player1.setCards(handOne)
         player2.setCards(handTwo)
@@ -114,26 +154,62 @@ class GameEngine {
         if card1.rank > card2.rank {
             player1.receiveCards(battlePile)
             battlePile.removeAll()
-            return .player1Win(card1: card1, card2: card2)
+            let result = TurnResult(
+                playerCardDrawn: card1,
+                cpuCardDrawn: card2,
+                playerCardCount: player1.cardCount,
+                cpuCardCount: player2.cardCount,
+                winner: player1,
+                isWar: false,
+                state: self.state // store engine state
+            )
+            currentTurnResult = result
+            #if DEBUG
+            logBattleResult(playerCard: card1, cpuCard: card2, winner: player1, isWar: false)
+            #endif
+            return result
         } else if card2.rank > card1.rank {
             player2.receiveCards(battlePile)
             battlePile.removeAll()
-            return .player2Win(card1: card1, card2: card2)
+            let result = TurnResult(
+                playerCardDrawn: card1,
+                cpuCardDrawn: card2,
+                playerCardCount: player1.cardCount,
+                cpuCardCount: player2.cardCount,
+                winner: player2,
+                isWar: false,
+                state: self.state
+            )
+            currentTurnResult = result
+            #if DEBUG
+            logBattleResult(playerCard: card1, cpuCard: card2, winner: player2, isWar: false)
+            #endif
+            return result
         } else {
             // Tie detected — automatically resolve war internally
             state = .war
             let warWinner = handleWar()
 
             // If war caused the game to finish, signal final state clearly
-            if case .finished = state {
-                return .war(initialCard1: card1,
-                            initialCard2: card2,
-                            winner: warWinner)
+            let result = TurnResult(
+                playerCardDrawn: card1,
+                cpuCardDrawn: card2,
+                playerCardCount: player1.cardCount,
+                cpuCardCount: player2.cardCount,
+                winner: warWinner,
+                isWar: true,
+                state: self.state
+            )
+            currentTurnResult = result
+            #if DEBUG
+            print("WAR triggered by tie: P1 \(card1.displayName) vs CPU \(card2.displayName)")
+            if let warWinner = warWinner {
+                print("WAR decided; awarding pile to \(warWinner.name)")
+            } else {
+                print("WAR sequence ended without a winner (unexpected)")
             }
-
-            return .war(initialCard1: card1,
-                        initialCard2: card2,
-                        winner: warWinner)
+            #endif
+            return result
         }
     }
     
@@ -152,6 +228,9 @@ class GameEngine {
                 winner.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .finished(winner: winner)
+                #if DEBUG
+                print("WAR ended early: opponent cannot continue; awarding pile to \(winner.name)")
+                #endif
                 return winner
             }
 
@@ -160,6 +239,9 @@ class GameEngine {
                 winner.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .finished(winner: winner)
+                #if DEBUG
+                print("WAR ended early: opponent cannot continue; awarding pile to \(winner.name)")
+                #endif
                 return winner
             }
 
@@ -181,6 +263,9 @@ class GameEngine {
                 winner.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .finished(winner: winner)
+                #if DEBUG
+                print("WAR draw failure: awarding pile to \(winner.name)")
+                #endif
                 return winner
             }
 
@@ -192,11 +277,17 @@ class GameEngine {
                 player1.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .active
+                #if DEBUG
+                print("WAR decided by upcards: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player1.name)")
+                #endif
                 return player1
             } else if warCard2.rank > warCard1.rank {
                 player2.receiveCards(battlePile)
                 battlePile.removeAll()
                 state = .active
+                #if DEBUG
+                print("WAR decided by upcards: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player2.name)")
+                #endif
                 return player2
             }
 
@@ -208,14 +299,19 @@ class GameEngine {
         winner.receiveCards(battlePile)
         battlePile.removeAll()
         state = .active
+        #if DEBUG
+        print("War failsafe: awarding pile to \(winner.name) (higher remaining count)")
+        #endif
         return winner
     }
     
     func startGame() {
         state = .active
         battlePile.removeAll()
+        player1.setCards([])
+        player2.setCards([])
         shuffleDeck()
         dealCards()
     }
 }
->>>>>>> Stashed changes
+
