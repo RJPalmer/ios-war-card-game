@@ -306,12 +306,28 @@ class GameEngine {
     }
     
     func startGame() {
-        state = .active
+        restartGame()
+    }
+
+    /// Fully resets the game to a clean initial state.
+    /// This method reinitializes all core components to avoid any leftover state.
+    func restartGame() {
+        // Reset core state
+        state = .idle
+        currentTurnResult = nil
         battlePile.removeAll()
-        player1.setCards([])
-        player2.setCards([])
+
+        // Reinitialize engine components (clean state, no shared references)
+        player1 = Player(name: "Player 1")
+        player2 = Player(name: "Player 2")
+        deck = Deck()
+
+        // Start fresh game setup
         shuffleDeck()
         dealCards()
+
+        // Transition to active state after setup
+        state = .active
     }
 }
 
