@@ -17,10 +17,18 @@ final class GameScene: SKScene {
 
     private var warAllTempNodes: [SKNode] {
         var nodes: [SKNode] = []
+
         nodes.append(contentsOf: warPlayerFaceDownNodes)
         nodes.append(contentsOf: warCPUFaceDownNodes)
-        if let n = warPlayerFaceUpNode { nodes.append(n) }
-        if let n = warCPUFaceUpNode { nodes.append(n) }
+
+        if let playerUp = warPlayerFaceUpNode {
+            nodes.append(playerUp)
+        }
+
+        if let cpuUp = warCPUFaceUpNode {
+            nodes.append(cpuUp)
+        }
+
         return nodes
     }
 
@@ -238,8 +246,6 @@ final class GameScene: SKScene {
 
     private func updateUI() {
         // Model-driven rendering using snapshot
-
-
         if let playerCard = viewModel.snapshot.playerCard {
             if currentPlayerCard != playerCard {
 
@@ -268,18 +274,20 @@ final class GameScene: SKScene {
         }
         if let cpuCard = viewModel.snapshot.cpuCard {
             if currentCPUCard != cpuCard {
-                let texture = CardTextureManager.shared.texture(for: cpuCard.rank,
-                                                                suit: cpuCard.suit)
+                let texture = CardTextureManager.shared.texture(
+                    for: cpuCard.rank,
+                    suit: cpuCard.suit
+                )
                 cpuCardNode.texture = texture
-                
+
                 #if DEBUG
                 cpuCardNode.childNode(withName: "debugLabel")?.removeFromParent()
-                
-                //add updated label
+
+                // Add updated label
                 let label = CardTextureManager.shared.debugLabel(
                     for: cpuCard.rank,
                     suit: cpuCard.suit
-                    )
+                )
                 label.name = "debugLabel"
                 cpuCardNode.addChild(label)
                 #endif
@@ -349,10 +357,10 @@ final class GameScene: SKScene {
                 resultLabel.text = "Game Over"
             }
             resultLabel.fontColor = .systemRed
-            
+
             // Immediately reflect disabled play button when finished
             updatePlayButtonState()
-            
+
             resultLabel.alpha = 0
             let fadeIn = SKAction.fadeIn(withDuration: 0.2)
             let pulseUp = SKAction.scale(to: 1.15, duration: 0.12)
@@ -371,30 +379,23 @@ final class GameScene: SKScene {
             updatePlayButtonState()
             return
         }
-        
         // Production safety: disable input while animations run
         isUserInteractionEnabled = false
         sceneState = .animating
-
         // Clear any persistent result message (e.g., WAR!) at the start of a new turn
         resultLabel.text = ""
         resultLabel.alpha = 1
         resultLabel.setScale(1.0)
         resultLabel.fontColor = .white
-
         let flipOutPlayer = SKAction.scaleX(to: 0, duration: 0.12)
         let flipOutCPU = SKAction.scaleX(to: 0, duration: 0.12)
-
         playerCardNode.run(flipOutPlayer)
         cpuCardNode.run(flipOutCPU)
-
         run(SKAction.wait(forDuration: 0.13)) { [weak self] in
             guard let self = self else { return }
-
             self.viewModel.playTurn()
             self.viewModel.checkGameOver()
             self.updateUI()
-
             if self.viewModel.isGameOver {
                 // End immediately; do not proceed with war/normal animations
                 self.run(SKAction.wait(forDuration: 0.1)) {
@@ -402,14 +403,10 @@ final class GameScene: SKScene {
                 }
                 return
             }
-
             let flipInPlayer = SKAction.scaleX(to: 1, duration: 0.12)
             let flipInCPU = SKAction.scaleX(to: 1, duration: 0.12)
-
             self.playerCardNode.run(flipInPlayer)
             self.cpuCardNode.run(flipInCPU)
-
-
             if self.viewModel.snapshot.isWar {
                 self.run(SKAction.wait(forDuration: 0.25)) {
                     self.runWarAnimation()
