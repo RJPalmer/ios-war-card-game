@@ -89,6 +89,8 @@ final class GameScene: SKScene {
 
     private let playButton = SKShapeNode(rectOf: CGSize(width: 160, height: 50), cornerRadius: 12)
     private let playButtonLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let restartButton = SKShapeNode(rectOf: CGSize(width: 160, height: 50), cornerRadius: 12)
+    private let restartButtonLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
 
     private var hasCreatedNodes = false
 
@@ -156,6 +158,19 @@ final class GameScene: SKScene {
         playButtonLabel.horizontalAlignmentMode = .center
         playButtonLabel.position = .zero
         playButton.addChild(playButtonLabel)
+
+        // Restart Button
+        restartButton.fillColor = .white
+        restartButton.name = "restartButton"
+        addChild(restartButton)
+
+        restartButtonLabel.text = "Restart"
+        restartButtonLabel.fontSize = 18
+        restartButtonLabel.fontColor = .black
+        restartButtonLabel.verticalAlignmentMode = .center
+        restartButtonLabel.horizontalAlignmentMode = .center
+        restartButtonLabel.position = .zero
+        restartButton.addChild(restartButtonLabel)
     }
 
     // MARK: - Layout (Called On Resize)
@@ -179,6 +194,44 @@ final class GameScene: SKScene {
 
         // Play Button (Near Bottom)
         playButton.position = CGPoint(x: 0, y: -size.height * 0.45)
+
+        // Restart Button (below play button)
+        restartButton.position = CGPoint(x: 0, y: playButton.position.y - 70)
+    }
+
+    // MARK: - Restart Game
+
+    private func restartGame() {
+        // Prevent input during reset
+        isUserInteractionEnabled = false
+        sceneState = .idle
+
+        // Reset ViewModel (assumes it exposes restart)
+        viewModel.restartGame()
+
+        // Reset UI state
+        currentPlayerCard = nil
+        currentCPUCard = nil
+
+        playerCardNode.texture = SKTexture(imageNamed: "card_back")
+        cpuCardNode.texture = SKTexture(imageNamed: "card_back")
+
+        resultLabel.text = "New Game"
+        resultLabel.fontColor = .white
+
+        // Clean up any war animation nodes
+        for node in warAllTempNodes {
+            node.removeFromParent()
+        }
+        warPlayerFaceDownNodes.removeAll()
+        warCPUFaceDownNodes.removeAll()
+        warPlayerFaceUpNode = nil
+        warCPUFaceUpNode = nil
+
+        updateUI()
+
+        // Re-enable input
+        isUserInteractionEnabled = true
     }
 
     // MARK: - UI Updates
@@ -339,6 +392,7 @@ final class GameScene: SKScene {
             guard let self = self else { return }
 
             self.viewModel.playTurn()
+            self.viewModel.checkGameOver()
             self.updateUI()
 
             if self.viewModel.isGameOver {
@@ -409,6 +463,7 @@ final class GameScene: SKScene {
 
             // Advance the model to reveal war upcards and determine winner
             self.viewModel.playTurn()
+            self.viewModel.checkGameOver()
             self.updateUI()
 
             if self.viewModel.isGameOver {
@@ -611,6 +666,11 @@ final class GameScene: SKScene {
         print("SceneState:", sceneState)
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
+
+        if restartButton.contains(location) {
+            restartGame()
+            return
+        }
 
         guard playButton.contains(location),
               sceneState == .idle,

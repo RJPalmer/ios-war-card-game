@@ -154,6 +154,9 @@ class GameEngine {
         if card1.rank > card2.rank {
             player1.receiveCards(battlePile)
             battlePile.removeAll()
+            if(player2.cardCount == 0){
+                state = .finished(winner: player1)
+            }
             let result = TurnResult(
                 playerCardDrawn: card1,
                 cpuCardDrawn: card2,
@@ -171,6 +174,9 @@ class GameEngine {
         } else if card2.rank > card1.rank {
             player2.receiveCards(battlePile)
             battlePile.removeAll()
+            if(player1.cardCount == 0){
+                state = .finished(winner: player2)
+            }
             let result = TurnResult(
                 playerCardDrawn: card1,
                 cpuCardDrawn: card2,
@@ -276,7 +282,11 @@ class GameEngine {
             if warCard1.rank > warCard2.rank {
                 player1.receiveCards(battlePile)
                 battlePile.removeAll()
-                state = .active
+                if(player2.cardCount == 0){
+                    state = .finished(winner: player1)
+                }else{
+                    state = .active
+                }
                 #if DEBUG
                 print("WAR decided by upcards: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player1.name)")
                 #endif
@@ -284,7 +294,11 @@ class GameEngine {
             } else if warCard2.rank > warCard1.rank {
                 player2.receiveCards(battlePile)
                 battlePile.removeAll()
-                state = .active
+                if(player1.cardCount == 0){
+                    state = .finished(winner: player2)
+                }else{
+                    state = .active
+                }
                 #if DEBUG
                 print("WAR decided by upcards: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player2.name)")
                 #endif
@@ -298,7 +312,11 @@ class GameEngine {
         let winner = player1.cardCount >= player2.cardCount ? player1 : player2
         winner.receiveCards(battlePile)
         battlePile.removeAll()
-        state = .active
+        if(player1.cardCount == 0 || player2.cardCount == 0){
+            state = .finished(winner: winner)
+        }else{
+            state = .active
+        }
         #if DEBUG
         print("War failsafe: awarding pile to \(winner.name) (higher remaining count)")
         #endif
