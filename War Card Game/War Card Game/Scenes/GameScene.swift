@@ -170,7 +170,10 @@ final class GameScene: SKScene {
         // Restart Button
         restartButton.fillColor = .white
         restartButton.name = "restartButton"
-        addChild(restartButton)
+        //addChild(restartButton)
+
+        // Hide restart button by default
+        restartButton.isHidden = true
 
         restartButtonLabel.text = "Restart"
         restartButtonLabel.fontSize = 18
@@ -200,11 +203,10 @@ final class GameScene: SKScene {
         playerCardNode.position = CGPoint(x: 0, y: -size.height * 0.25)
         playerCountLabel.position = CGPoint(x: 0, y: playerCardNode.position.y + verticalSpacing)
 
-        // Play Button (Near Bottom)
-        playButton.position = CGPoint(x: 0, y: -size.height * 0.45)
-
-        // Restart Button (below play button)
-        restartButton.position = CGPoint(x: 0, y: playButton.position.y - 70)
+        // Play Button and Restart Button (Same Location Near Bottom)
+        let buttonPosition = CGPoint(x: 0, y: -size.height * 0.45)
+        playButton.position = buttonPosition
+        restartButton.position = buttonPosition
     }
 
     // MARK: - Restart Game
@@ -237,6 +239,10 @@ final class GameScene: SKScene {
         warCPUFaceUpNode = nil
 
         updateUI()
+
+        // Reset button visibility
+        playButton.isHidden = false
+        restartButton.isHidden = true
 
         // Re-enable input
         isUserInteractionEnabled = true
@@ -330,11 +336,31 @@ final class GameScene: SKScene {
 
     private func updatePlayButtonState() {
         if sceneState == .gameOver {
-            playButton.fillColor = .gray
-            playButton.alpha = 0.6
+            // Remove play button from the scene entirely
+            if playButton.parent != nil {
+                playButton.removeFromParent()
+            }
+            // Ensure restart button is visible and in place
+            if restartButton.parent == nil {
+                addChild(restartButton)
+            }
+            restartButton.isHidden = false
         } else {
-            playButton.fillColor = .white
-            playButton.alpha = 1.0
+            // Re-add play button if it was removed and ensure it's visible
+            if playButton.parent == nil {
+                addChild(playButton)
+                // Re-apply its position since layout may be called on resize
+                let buttonPosition = CGPoint(x: 0, y: -size.height * 0.45)
+                playButton.position = buttonPosition
+            }
+            playButton.isHidden = false
+
+            // Hide restart button when not in game over state
+            restartButton.isHidden = true
+            // Optionally remove restart button if you want it out of the scene graph
+            if restartButton.parent != nil {
+                restartButton.removeFromParent()
+            }
         }
     }
 
@@ -664,7 +690,7 @@ final class GameScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
-        if restartButton.contains(location) {
+        if sceneState == .gameOver && restartButton.contains(location) {
             restartGame()
             return
         }
