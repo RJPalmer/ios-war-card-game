@@ -38,16 +38,26 @@ final class GameScene: SKScene {
     private let warCardScale: CGFloat = 0.5
     private let warCardSpacing: CGFloat = 16
 
-    private func makeCardNode(texture: SKTexture, scale: CGFloat, z: CGFloat = 0) -> SKSpriteNode {
+    private func makeCardNode(
+        texture: SKTexture,
+        scale: CGFloat,
+        z: CGFloat = 0
+    ) -> SKSpriteNode {
         let node = SKSpriteNode(texture: texture)
-        node.size = CGSize(width: CardNode.defaultSize.width, height: CardNode.defaultSize.height)
+        node.size = CGSize(
+            width: CardNode.defaultSize.width,
+            height: CardNode.defaultSize.height
+        )
         node.setScale(scale)
         node.zPosition = z
         return node
     }
 
     private func makeFaceDownNode(scale: CGFloat) -> SKSpriteNode {
-        return makeCardNode(texture: SKTexture(imageNamed: "card_back"), scale: scale)
+        return makeCardNode(
+            texture: SKTexture(imageNamed: "card_back"),
+            scale: scale
+        )
     }
 
     private func warPositions(isPlayer: Bool, count: Int) -> [CGPoint] {
@@ -72,16 +82,19 @@ final class GameScene: SKScene {
     }
 
     #if DEBUG
-    private func logSceneStateChange(from old: SceneState, to new: SceneState) {
-        guard old != new else { return }
-        print("SceneState changed: \(old) -> \(new)")
-    }
+        private func logSceneStateChange(
+            from old: SceneState,
+            to new: SceneState
+        ) {
+            guard old != new else { return }
+            print("SceneState changed: \(old) -> \(new)")
+        }
     #endif
 
     private var sceneState: SceneState = .idle {
         didSet {
             #if DEBUG
-            logSceneStateChange(from: oldValue, to: sceneState)
+                logSceneStateChange(from: oldValue, to: sceneState)
             #endif
         }
     }
@@ -95,9 +108,15 @@ final class GameScene: SKScene {
     private let cpuCountLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
     private let playerCountLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
 
-    private let playButton = SKShapeNode(rectOf: CGSize(width: 160, height: 50), cornerRadius: 12)
+    private let playButton = SKShapeNode(
+        rectOf: CGSize(width: 160, height: 50),
+        cornerRadius: 12
+    )
     private let playButtonLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-    private let restartButton = SKShapeNode(rectOf: CGSize(width: 160, height: 50), cornerRadius: 12)
+    private let restartButton = SKShapeNode(
+        rectOf: CGSize(width: 160, height: 50),
+        cornerRadius: 12
+    )
     private let restartButtonLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
 
     private var hasCreatedNodes = false
@@ -194,14 +213,20 @@ final class GameScene: SKScene {
 
         // CPU Area (Top Third)
         cpuCardNode.position = CGPoint(x: 0, y: size.height * 0.30)
-        cpuCountLabel.position = CGPoint(x: 0, y: cpuCardNode.position.y - verticalSpacing)
+        cpuCountLabel.position = CGPoint(
+            x: 0,
+            y: cpuCardNode.position.y - verticalSpacing
+        )
 
         // Battle Result Area (Center)
         resultLabel.position = CGPoint(x: 0, y: 0)
 
         // Player Area (Bottom Third)
         playerCardNode.position = CGPoint(x: 0, y: -size.height * 0.25)
-        playerCountLabel.position = CGPoint(x: 0, y: playerCardNode.position.y + verticalSpacing)
+        playerCountLabel.position = CGPoint(
+            x: 0,
+            y: playerCardNode.position.y + verticalSpacing
+        )
 
         // Play Button and Restart Button (Same Location Near Bottom)
         let buttonPosition = CGPoint(x: 0, y: -size.height * 0.45)
@@ -251,87 +276,75 @@ final class GameScene: SKScene {
     // MARK: - UI Updates
 
     private func updateUI() {
-        // Model-driven rendering using snapshot
-        if let playerCard = viewModel.snapshot.playerCard {
-            if currentPlayerCard != playerCard {
+        let snapshot = viewModel.snapshot
 
-                let texture = CardTextureManager.shared.texture(
-                    for: playerCard.rank,
-                    suit: playerCard.suit
-                )
+        // MARK: - Card Updates
 
-                playerCardNode.texture = texture
-
-                #if DEBUG
-                // Remove previous debug label
-                playerCardNode.childNode(withName: "debugLabel")?.removeFromParent()
-
-                // Add updated label
-                let label = CardTextureManager.shared.debugLabel(
-                    for: playerCard.rank,
-                    suit: playerCard.suit
-                )
-                label.name = "debugLabel"
-                playerCardNode.addChild(label)
-                #endif
-
-                currentPlayerCard = playerCard
-            }
+        if let playerCard = snapshot.playerCard {
+            let texture = CardTextureManager.shared.texture(
+                for: playerCard.rank,
+                suit: playerCard.suit
+            )
+            playerCardNode.texture = texture
         }
-        if let cpuCard = viewModel.snapshot.cpuCard {
-            if currentCPUCard != cpuCard {
-                let texture = CardTextureManager.shared.texture(
-                    for: cpuCard.rank,
-                    suit: cpuCard.suit
-                )
-                cpuCardNode.texture = texture
 
-                #if DEBUG
-                cpuCardNode.childNode(withName: "debugLabel")?.removeFromParent()
+        if let cpuCard = snapshot.cpuCard {
+            let texture = CardTextureManager.shared.texture(
+                for: cpuCard.rank,
+                suit: cpuCard.suit
+            )
+            cpuCardNode.texture = texture
+        }
 
-                // Add updated label
-                let label = CardTextureManager.shared.debugLabel(
-                    for: cpuCard.rank,
-                    suit: cpuCard.suit
-                )
-                label.name = "debugLabel"
-                cpuCardNode.addChild(label)
-                #endif
-                currentCPUCard = cpuCard
+        // MARK: - Card Counts
+
+        playerCountLabel.text = "Player Cards: \(snapshot.playerCardCount)"
+        cpuCountLabel.text = "CPU Cards: \(snapshot.cpuCardCount)"
+
+        // MARK: - Result / Status Label
+
+        let extractedExpr: GameEngine.GameState = snapshot.state
+        switch extractedExpr {
+        case .idle:
+            resultLabel.text = "Tap Play to Start"
+            resultLabel.fontColor = .white
+
+        case .active:
+           
+                resultLabel.text = ""
+            
+
+        case .finished(let winner):
+            resultLabel.text = "\(winner.name) Wins!"
+            resultLabel.fontColor = .systemRed
+        case .war:
+            resultLabel.text = "WAR!"
+            resultLabel.fontColor = .systemYellow
+        }
+
+        // MARK: - Button State (Single Source of Truth)
+
+        if viewModel.isGameOver {
+            // Show restart, hide play
+            if playButton.parent != nil {
+                playButton.removeFromParent()
             }
+            if restartButton.parent == nil {
+                addChild(restartButton)
+            }
+            restartButton.isHidden = false
         } else {
-            cpuCardNode.texture = SKTexture(imageNamed: "card_back")
-            currentCPUCard = nil
-        }
-
-        // Update result label: show WAR! when a war battle occurs and keep it until next play
-        if viewModel.snapshot.isWar {
-            // Only set/animate when entering war state
-            if resultLabel.text != "WAR!" {
-                resultLabel.alpha = 0
-                resultLabel.text = "WAR!"
-                resultLabel.fontColor = .systemYellow
-                let fadeIn = SKAction.fadeIn(withDuration: 0.15)
-                let pulseUp = SKAction.scale(to: 1.15, duration: 0.12)
-                let pulseDown = SKAction.scale(to: 1.0, duration: 0.12)
-                resultLabel.run(SKAction.sequence([fadeIn, pulseUp, pulseDown]))
+            // Show play, hide restart
+            if playButton.parent == nil {
+                addChild(playButton)
+                playButton.position = CGPoint(x: 0, y: -size.height * 0.45)
             }
-        } else {
-            // Do not clear here; allow finishTurn() or next turn start to clear
+            playButton.isHidden = false
+
+            if restartButton.parent != nil {
+                restartButton.removeFromParent()
+            }
         }
-
-        #if DEBUG
-        if let p = viewModel.snapshot.playerCard, let c = viewModel.snapshot.cpuCard {
-            print("UI Snapshot -> Player: \(p.rank.displayName) of \(p.suit.displayName) | CPU: \(c.rank.displayName) of \(c.suit.displayName) | Counts: P=\(viewModel.snapshot.playerCardCount) CPU=\(viewModel.snapshot.cpuCardCount)")
-        }
-        #endif
-
-        playerCountLabel.text = "Player Cards: \(viewModel.snapshot.playerCardCount)"
-        cpuCountLabel.text = "CPU Cards: \(viewModel.snapshot.cpuCardCount)"
-
-        syncSceneStateWithSnapshot()
-
-        updatePlayButtonState()
     }
 
     private func updatePlayButtonState() {
@@ -369,7 +382,9 @@ final class GameScene: SKScene {
     private func syncSceneStateWithSnapshot() {
 
         // Never override state while animations are running
-        if sceneState == .animating || sceneState == .warDealing || sceneState == .warResolving {
+        if sceneState == .animating || sceneState == .warDealing
+            || sceneState == .warResolving
+        {
             return
         }
 
@@ -420,7 +435,7 @@ final class GameScene: SKScene {
         run(SKAction.wait(forDuration: 0.13)) { [weak self] in
             guard let self = self else { return }
             self.viewModel.playTurn()
-            self.viewModel.checkGameOver()
+
             self.updateUI()
             if self.viewModel.isGameOver {
                 // End immediately; do not proceed with war/normal animations
@@ -450,8 +465,9 @@ final class GameScene: SKScene {
 
         // Safety: ensure we are actually in a war state and both sides have cards to place
         guard viewModel.snapshot.isWar,
-              viewModel.snapshot.playerCardCount > 0,
-              viewModel.snapshot.cpuCardCount > 0 else {
+            viewModel.snapshot.playerCardCount > 0,
+            viewModel.snapshot.cpuCardCount > 0
+        else {
             // If not valid, reset positions and finish the turn gracefully
             resetCardPositions()
             finishTurn()
@@ -486,7 +502,6 @@ final class GameScene: SKScene {
 
             // Advance the model to reveal war upcards and determine winner
             self.viewModel.playTurn()
-            self.viewModel.checkGameOver()
             self.updateUI()
 
             if self.viewModel.isGameOver {
@@ -497,11 +512,17 @@ final class GameScene: SKScene {
             }
 
             if let pCard = self.viewModel.snapshot.playerCard {
-                let tex = CardTextureManager.shared.texture(for: pCard.rank, suit: pCard.suit)
+                let tex = CardTextureManager.shared.texture(
+                    for: pCard.rank,
+                    suit: pCard.suit
+                )
                 self.warPlayerFaceUpNode?.texture = tex
             }
             if let cCard = self.viewModel.snapshot.cpuCard {
-                let tex = CardTextureManager.shared.texture(for: cCard.rank, suit: cCard.suit)
+                let tex = CardTextureManager.shared.texture(
+                    for: cCard.rank,
+                    suit: cCard.suit
+                )
                 self.warCPUFaceUpNode?.texture = tex
             }
 
@@ -517,18 +538,27 @@ final class GameScene: SKScene {
 
     private func dealWarCards() {
         // Guards to ensure valid war dealing conditions
-        guard sceneState == .warDealing || sceneState == .warResolving else { return }
+        guard sceneState == .warDealing || sceneState == .warResolving else {
+            return
+        }
         guard viewModel.snapshot.isWar else { return }
-        guard viewModel.snapshot.playerCardCount >= 0, viewModel.snapshot.cpuCardCount >= 0 else { return }
+        guard viewModel.snapshot.playerCardCount >= 0,
+            viewModel.snapshot.cpuCardCount >= 0
+        else { return }
         // If both sides are at zero, nothing to deal; finish turn safely
-        guard (viewModel.snapshot.playerCardCount + viewModel.snapshot.cpuCardCount) > 0 else {
+        guard
+            (viewModel.snapshot.playerCardCount
+                + viewModel.snapshot.cpuCardCount) > 0
+        else {
             resetCardPositions()
             finishTurn()
             return
         }
 
         // Both players must have at least one card to place a face-up card
-        guard viewModel.snapshot.playerCardCount > 0, viewModel.snapshot.cpuCardCount > 0 else {
+        guard viewModel.snapshot.playerCardCount > 0,
+            viewModel.snapshot.cpuCardCount > 0
+        else {
             resetCardPositions()
             finishTurn()
             return
@@ -552,13 +582,18 @@ final class GameScene: SKScene {
                 warPlayerFaceDownNodes.append(node)
 
                 let delay = 0.06 * Double(i)
-                node.run(SKAction.sequence([
-                    SKAction.wait(forDuration: delay),
-                    SKAction.group([
-                        SKAction.fadeIn(withDuration: 0.08),
-                        SKAction.move(to: playerPositions[i], duration: 0.15)
+                node.run(
+                    SKAction.sequence([
+                        SKAction.wait(forDuration: delay),
+                        SKAction.group([
+                            SKAction.fadeIn(withDuration: 0.08),
+                            SKAction.move(
+                                to: playerPositions[i],
+                                duration: 0.15
+                            ),
+                        ]),
                     ])
-                ]))
+                )
             }
         }
 
@@ -572,13 +607,15 @@ final class GameScene: SKScene {
                 warCPUFaceDownNodes.append(node)
 
                 let delay = 0.06 * Double(i)
-                node.run(SKAction.sequence([
-                    SKAction.wait(forDuration: delay),
-                    SKAction.group([
-                        SKAction.fadeIn(withDuration: 0.08),
-                        SKAction.move(to: cpuPositions[i], duration: 0.15)
+                node.run(
+                    SKAction.sequence([
+                        SKAction.wait(forDuration: delay),
+                        SKAction.group([
+                            SKAction.fadeIn(withDuration: 0.08),
+                            SKAction.move(to: cpuPositions[i], duration: 0.15),
+                        ]),
                     ])
-                ]))
+                )
             }
         }
 
@@ -590,13 +627,18 @@ final class GameScene: SKScene {
             addChild(node)
             warPlayerFaceUpNode = node
             let delay = 0.06 * Double(max(pN - 1, 0))
-            node.run(SKAction.sequence([
-                SKAction.wait(forDuration: delay),
-                SKAction.group([
-                    SKAction.fadeIn(withDuration: 0.08),
-                    SKAction.move(to: playerPositions[max(pN - 1, 0)], duration: 0.15)
+            node.run(
+                SKAction.sequence([
+                    SKAction.wait(forDuration: delay),
+                    SKAction.group([
+                        SKAction.fadeIn(withDuration: 0.08),
+                        SKAction.move(
+                            to: playerPositions[max(pN - 1, 0)],
+                            duration: 0.15
+                        ),
+                    ]),
                 ])
-            ]))
+            )
         }
 
         if cN > 0 {
@@ -606,13 +648,18 @@ final class GameScene: SKScene {
             addChild(node)
             warCPUFaceUpNode = node
             let delay = 0.06 * Double(max(cN - 1, 0))
-            node.run(SKAction.sequence([
-                SKAction.wait(forDuration: delay),
-                SKAction.group([
-                    SKAction.fadeIn(withDuration: 0.08),
-                    SKAction.move(to: cpuPositions[max(cN - 1, 0)], duration: 0.15)
+            node.run(
+                SKAction.sequence([
+                    SKAction.wait(forDuration: delay),
+                    SKAction.group([
+                        SKAction.fadeIn(withDuration: 0.08),
+                        SKAction.move(
+                            to: cpuPositions[max(cN - 1, 0)],
+                            duration: 0.15
+                        ),
+                    ]),
                 ])
-            ]))
+            )
         }
 
         // After dealing finishes, move to resolution
@@ -624,31 +671,41 @@ final class GameScene: SKScene {
     private func gatherWarPileAndAward() {
         // Determine winner based on revealed upcards after resolve
         var winnerIsPlayer = false
-        if let p = viewModel.snapshot.playerCard, let c = viewModel.snapshot.cpuCard {
+        if let p = viewModel.snapshot.playerCard,
+            let c = viewModel.snapshot.cpuCard
+        {
             winnerIsPlayer = p.rank > c.rank
         }
 
         let pilePoint = warCenter
-        let target = winnerIsPlayer ? CGPoint(x: 0, y: -size.height * 0.35) : CGPoint(x: 0, y: size.height * 0.40)
+        let target =
+            winnerIsPlayer
+            ? CGPoint(x: 0, y: -size.height * 0.35)
+            : CGPoint(x: 0, y: size.height * 0.40)
 
         let allNodes = warAllTempNodes
         for (i, node) in allNodes.enumerated() {
             let delay = 0.04 * Double(i)
             let moveToPile = SKAction.group([
                 SKAction.move(to: pilePoint, duration: 0.18),
-                SKAction.rotate(byAngle: CGFloat.random(in: -0.06...0.06), duration: 0.18)
+                SKAction.rotate(
+                    byAngle: CGFloat.random(in: -0.06...0.06),
+                    duration: 0.18
+                ),
             ])
             let moveToWinner = SKAction.group([
                 SKAction.move(to: target, duration: 0.22),
-                SKAction.fadeOut(withDuration: 0.22)
+                SKAction.fadeOut(withDuration: 0.22),
             ])
-            node.run(SKAction.sequence([
-                SKAction.wait(forDuration: delay),
-                moveToPile,
-                SKAction.wait(forDuration: 0.06),
-                moveToWinner,
-                SKAction.removeFromParent()
-            ]))
+            node.run(
+                SKAction.sequence([
+                    SKAction.wait(forDuration: delay),
+                    moveToPile,
+                    SKAction.wait(forDuration: 0.06),
+                    moveToWinner,
+                    SKAction.removeFromParent(),
+                ])
+            )
         }
 
         run(SKAction.wait(forDuration: 0.65)) { [weak self] in
@@ -663,8 +720,14 @@ final class GameScene: SKScene {
     }
 
     private func resetCardPositions() {
-        let resetPlayer = SKAction.move(to: CGPoint(x: 0, y: -size.height * 0.25), duration: 0.2)
-        let resetCPU = SKAction.move(to: CGPoint(x: 0, y: size.height * 0.30), duration: 0.2)
+        let resetPlayer = SKAction.move(
+            to: CGPoint(x: 0, y: -size.height * 0.25),
+            duration: 0.2
+        )
+        let resetCPU = SKAction.move(
+            to: CGPoint(x: 0, y: size.height * 0.30),
+            duration: 0.2
+        )
         let scaleUp = SKAction.scale(to: 0.65, duration: 0.2)
 
         playerCardNode.run(SKAction.group([resetPlayer, scaleUp]))
@@ -696,10 +759,10 @@ final class GameScene: SKScene {
         }
 
         guard playButton.contains(location),
-              sceneState == .idle,
-              !viewModel.isGameOver else { return }
+            sceneState == .idle,
+            !viewModel.isGameOver
+        else { return }
 
         runTurnAnimation()
     }
 }
- 
