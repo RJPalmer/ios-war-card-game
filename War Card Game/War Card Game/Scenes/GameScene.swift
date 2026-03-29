@@ -286,7 +286,11 @@ final class GameScene: SKScene {
                 suit: playerCard.suit
             )
             playerCardNode.texture = texture
-        }
+            #if DEBUG
+            let playerDebugLabel = CardTextureManager.shared.debugLabel(for: playerCard.rank, suit: playerCard.suit)
+            playerCardNode.addChild(playerDebugLabel)
+            #endif
+        }   
 
         if let cpuCard = snapshot.cpuCard {
             let texture = CardTextureManager.shared.texture(
