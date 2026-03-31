@@ -287,6 +287,15 @@ final class GameScene: SKScene {
             )
             playerCardNode.texture = texture
             #if DEBUG
+            // Remove any previous debug overlays from the player card node
+            playerCardNode.children.forEach { child in
+                if let label = child as? SKLabelNode, label.fontName == "Menlo-Bold" {
+                    label.removeFromParent()
+                } else if let shape = child as? SKShapeNode, shape.zPosition == 998 {
+                    shape.removeFromParent()
+                }
+            }
+            // Add new debug overlay for current card
             let playerDebugLabel = CardTextureManager.shared.debugLabel(for: playerCard.rank, suit: playerCard.suit)
             playerCardNode.addChild(playerDebugLabel)
             #endif
@@ -770,3 +779,4 @@ final class GameScene: SKScene {
         runTurnAnimation()
     }
 }
+
