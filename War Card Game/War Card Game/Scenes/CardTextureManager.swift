@@ -21,6 +21,9 @@ final class CardTextureManager {
     private let columns = 13
     private let rows = 4
 
+    // Padding (in pixels) around and between each card cell in the sprite sheet
+    private let cellPadding: CGFloat = 11
+
     private let sheetPixelWidth: CGFloat
     private let sheetPixelHeight: CGFloat
 
@@ -39,8 +42,14 @@ final class CardTextureManager {
         sheetPixelWidth = size.width
         sheetPixelHeight = size.height
 
-        cardPixelWidth = sheetPixelWidth / CGFloat(columns)
-        cardPixelHeight = sheetPixelHeight / CGFloat(rows)
+        // Compute the actual card pixel size accounting for padding around and between cells.
+        // Assumes there is `cellPadding` on the outer edges and between each cell.
+        // Total horizontal padding = (columns + 1) * cellPadding
+        // Total vertical padding   = (rows + 1) * cellPadding
+        let totalHorizontalPadding = CGFloat(columns + 1) * cellPadding
+        let totalVerticalPadding = CGFloat(rows + 1) * cellPadding
+        cardPixelWidth = (sheetPixelWidth - totalHorizontalPadding) / CGFloat(columns)
+        cardPixelHeight = (sheetPixelHeight - totalVerticalPadding) / CGFloat(rows)
 
         // Convert pixel dimensions to normalized SpriteKit texture coordinates
         cardWidth = cardPixelWidth / sheetPixelWidth
@@ -72,17 +81,17 @@ final class CardTextureManager {
         let visualRow = suitIndex
         let spriteRow = rows - 1 - visualRow
 
-        // Slight inset (1 pixel) based on real sprite sheet size to avoid texture bleeding
-        let pixelInset: CGFloat = 1
-        let insetX = pixelInset / sheetPixelWidth
-        let insetY = pixelInset / sheetPixelHeight
+        // Compute pixel-space origin for this cell including padding
+        let originPixelX = cellPadding + CGFloat(column) * (cardPixelWidth + cellPadding)
+        let originPixelY = cellPadding + CGFloat(spriteRow) * (cardPixelHeight + cellPadding)
 
-        let rect = CGRect(
-            x: CGFloat(column) * cardWidth + insetX,
-            y: CGFloat(spriteRow) * cardHeight + insetY,
-            width: cardWidth - insetX,
-            height: cardHeight - insetY
-        )
+        // Convert to normalized texture coordinates
+        let normX = originPixelX / sheetPixelWidth
+        let normY = originPixelY / sheetPixelHeight
+        let normW = cardPixelWidth / sheetPixelWidth
+        let normH = cardPixelHeight / sheetPixelHeight
+
+        let rect = CGRect(x: normX, y: normY, width: normW, height: normH)
 
         let texture = SKTexture(rect: rect, in: sheetTexture)
         texture.filteringMode = .nearest
