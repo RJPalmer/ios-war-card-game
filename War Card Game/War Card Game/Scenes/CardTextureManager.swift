@@ -91,9 +91,17 @@ final class CardTextureManager {
         let normW = cardPixelWidth / sheetPixelWidth
         let normH = cardPixelHeight / sheetPixelHeight
 
-        let rect = CGRect(x: normX, y: normY, width: normW, height: normH)
+        // Apply symmetric 1-pixel inset to avoid bleeding from neighboring cells
+        let onePixelX = 1.0 / sheetPixelWidth
+        let onePixelY = 1.0 / sheetPixelHeight
+        let insetRect = CGRect(
+            x: normX + onePixelX,
+            y: normY + onePixelY,
+            width: max(0, normW - 2 * onePixelX),
+            height: max(0, normH - 2 * onePixelY)
+        )
 
-        let texture = SKTexture(rect: rect, in: sheetTexture)
+        let texture = SKTexture(rect: insetRect, in: sheetTexture)
         texture.filteringMode = .nearest
 
         cache[key] = texture
