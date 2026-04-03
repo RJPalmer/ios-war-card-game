@@ -42,23 +42,6 @@ final class GameViewModel {
         return snapshot
     }
 
-    /// Checks if the game is over
-    func checkGameOver(){
-        // If engine state is finished, update snapshot to reflect final state
-        if case .finished = engine.state {
-            snapshot = GameViewModel.makeSnapshot(from: engine)
-            
-            return
-        }
-
-        // Additional safety: check card counts in case engine hasn't flagged finished yet
-        let playerCount = engine.player1.cardCount
-        let cpuCount = engine.player2.cardCount
-
-        if playerCount == 0 || cpuCount == 0 {
-            snapshot = GameViewModel.makeSnapshot(from: engine)
-        }
-    }
     /// Resets the game by delegating to the engine and rebuilding the snapshot
     func restartGame() {
         engine.restartGame()

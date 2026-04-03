@@ -83,6 +83,24 @@ class GameEngine {
     // Stores the last turn's result; optional until the first turn is played.
     private(set) var currentTurnResult: TurnResult?
     
+    #if DEBUG
+    private func evaluateGameOver() {
+        if player1.cardCount == 0 {
+            state = .finished(winner: player2)
+        } else if player2.cardCount == 0 {
+            state = .finished(winner: player1)
+        }
+    }
+    #else
+    private func evaluateGameOver() {
+        if player1.cardCount == 0 {
+            state = .finished(winner: player2)
+        } else if player2.cardCount == 0 {
+            state = .finished(winner: player1)
+        }
+    }
+    #endif
+    
     init() {
         // Initialize players, deck, and battle pile
         player1 = Player(name: "Player 1")
@@ -154,9 +172,7 @@ class GameEngine {
         if card1.rank > card2.rank {
             player1.receiveCards(battlePile)
             battlePile.removeAll()
-            if(player2.cardCount == 0){
-                state = .finished(winner: player1)
-            }
+            evaluateGameOver()
             let result = TurnResult(
                 playerCardDrawn: card1,
                 cpuCardDrawn: card2,
@@ -174,9 +190,7 @@ class GameEngine {
         } else if card2.rank > card1.rank {
             player2.receiveCards(battlePile)
             battlePile.removeAll()
-            if(player1.cardCount == 0){
-                state = .finished(winner: player2)
-            }
+            evaluateGameOver()
             let result = TurnResult(
                 playerCardDrawn: card1,
                 cpuCardDrawn: card2,
@@ -282,11 +296,11 @@ class GameEngine {
             if warCard1.rank > warCard2.rank {
                 player1.receiveCards(battlePile)
                 battlePile.removeAll()
-                if(player2.cardCount == 0){
-                    state = .finished(winner: player1)
-                }else{
-                    state = .active
+                evaluateGameOver()
+                if case .finished = state {
+                    return player1
                 }
+                state = .active
                 #if DEBUG
                 print("WAR decided by upcards: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player1.name)")
                 #endif
@@ -294,11 +308,11 @@ class GameEngine {
             } else if warCard2.rank > warCard1.rank {
                 player2.receiveCards(battlePile)
                 battlePile.removeAll()
-                if(player1.cardCount == 0){
-                    state = .finished(winner: player2)
-                }else{
-                    state = .active
+                evaluateGameOver()
+                if case .finished = state {
+                    return player2
                 }
+                state = .active
                 #if DEBUG
                 print("WAR decided by upcards: P1 \(warCard1.rank.displayName) vs CPU \(warCard2.rank.displayName) -> Winner: \(player2.name)")
                 #endif
@@ -312,11 +326,11 @@ class GameEngine {
         let winner = player1.cardCount >= player2.cardCount ? player1 : player2
         winner.receiveCards(battlePile)
         battlePile.removeAll()
-        if(player1.cardCount == 0 || player2.cardCount == 0){
-            state = .finished(winner: winner)
-        }else{
-            state = .active
+        evaluateGameOver()
+        if case .finished = state {
+            return winner
         }
+        state = .active
         #if DEBUG
         print("War failsafe: awarding pile to \(winner.name) (higher remaining count)")
         #endif
@@ -348,4 +362,3 @@ class GameEngine {
         state = .active
     }
 }
-
